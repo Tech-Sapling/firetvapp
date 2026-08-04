@@ -1,9 +1,730 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>App</title>
+<meta charset="UTF-8">
+<title>zumo — Fire TV Profiles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#090b10;
+    --bg-1:#12161f;
+    --surface:#1b212c;
+    --surface-hi:#242c3a;
+    --accent:#4fc3ff;
+    --accent-2:#8adcff;
+    --accent-glow:rgba(79,195,255,.55);
+    --text:#f5f1e8;
+    --text-muted:#8992a6;
+    --profile-red:#e3402c;
+    --profile-blue:#345fd6;
+    --profile-green:#2fae66;
+    --safe-x:6vw;
+    --safe-y:5vh;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html{font-size:20px;}
+
+  body{
+    width:100vw; height:100vh; overflow:hidden;
+    background:
+      radial-gradient(ellipse 120% 80% at 50% -10%, #1c2333 0%, transparent 55%),
+      radial-gradient(ellipse 100% 60% at 80% 110%, rgba(79,195,255,.10) 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    color:var(--text);
+    font-family:'Nunito Sans', system-ui, sans-serif;
+  }
+
+  .app{ width:100%; height:100%; display:flex; flex-direction:column; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: var(--safe-y) var(--safe-x) 1.5rem;
+    flex-shrink:0;
+  }
+  .brand{
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2rem;
+    letter-spacing:.01em; display:flex; align-items:center; gap:.02em;
+    text-transform:lowercase;
+  }
+  .brand .o-dot{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:.62em; height:.62em; border-radius:50%;
+    background:var(--accent);
+    margin:0 .01em;
+  }
+  .brand .o-dot::after{
+    content:'';
+    width:.28em; height:.28em; border-radius:50%;
+    background:#fff;
+  }
+  .remote-hint{
+    display:flex; gap:1.1rem; font-size:.8rem; color:var(--text-muted); font-weight:600;
+    letter-spacing:.02em;
+  }
+  .remote-hint .chip{
+    display:inline-flex; align-items:center; gap:.5rem;
+    background:var(--surface); border:1px solid #2c3444; border-radius:999px;
+    padding:.4rem .9rem .4rem .5rem;
+  }
+  .remote-hint .glyph{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:1.6rem; height:1.6rem; border-radius:50%;
+    background:var(--bg-0); color:var(--text); font-size:.85rem; font-weight:700;
+  }
+
+  /* ---------- Screens ---------- */
+  main{ position:relative; flex:1; padding: 1rem var(--safe-x) var(--safe-y); overflow:hidden; }
+  .screen{
+    position:absolute; inset: 1rem var(--safe-x) var(--safe-y);
+    display:none; flex-direction:column;
+    animation: fadeIn .35s ease;
+  }
+  .screen.active{ display:flex; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+
+  .screen-title{
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2.4rem;
+    margin-bottom:.4rem; letter-spacing:-.01em;
+  }
+  .screen-sub{ color:var(--text-muted); font-size:1.1rem; margin-bottom:1.6rem; }
+
+  /* ---------- Focus system ---------- */
+  .focusable{
+    position:relative;
+    outline:none; cursor:pointer;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .focusable::after{
+    content:'';
+    position:absolute;
+    left:50%; bottom:-.6rem;
+    width:60%; height:3px; border-radius:2px;
+    background:var(--accent);
+    box-shadow:0 0 8px 1px var(--accent-glow);
+    transform:translateX(-50%) scaleX(0);
+    transition: transform .15s ease;
+  }
+  .focusable:focus{
+    transform:translateY(-2px);
+    z-index:2;
+  }
+  .focusable:focus::after{
+    transform:translateX(-50%) scaleX(1);
+  }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-10px); }
+    40%{ transform:translateX(10px); }
+    60%{ transform:translateX(-6px); }
+    80%{ transform:translateX(6px); }
+  }
+  .shake{ animation: shake .4s ease; }
+
+  /* ---------- Profile picker ---------- */
+  .profile-grid{
+    display:flex; gap:2.4rem; align-items:flex-start; margin-top:1rem; flex-wrap:wrap;
+  }
+  .profile-tile{ display:flex; flex-direction:column; align-items:center; gap:.9rem; width:9rem; }
+  .avatar{
+    width:8rem; height:8rem; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2.6rem; color:#fff;
+    background:var(--surface);
+    border:3px solid transparent;
+  }
+  .profile-name{ font-size:1.05rem; font-weight:600; color:var(--text-muted); text-align:center; }
+  .profile-tile:focus .profile-name{ color:var(--text); }
+
+  .add-avatar{
+    background:transparent; border:3px dashed #3a4257; color:var(--text-muted);
+    font-size:2.6rem; font-weight:300;
+  }
+  .add-avatar:before{ content:'+'; }
+  .profile-tile:focus .add-avatar{ border-color:var(--accent); color:var(--accent-2); }
+
+  .settings-avatar{
+    background:transparent; border:3px solid #3a4257; color:var(--text-muted);
+    font-size:2.2rem;
+  }
+  .settings-avatar:before{ content:'\2699'; }
+  .profile-tile:focus .settings-avatar{ border-color:var(--accent); color:var(--accent-2); }
+
+  /* ---------- Name entry ---------- */
+  .name-display{
+    background:var(--surface); border-radius:1rem; padding:1.1rem 1.6rem;
+    font-family:'Baloo 2', sans-serif; font-weight:600; font-size:1.8rem;
+    min-width:20rem; max-width:32rem; margin-bottom:1.8rem;
+    border:2px solid #2c3444;
+    display:flex; align-items:center; min-height:1.2em;
+  }
+  .cursor{
+    display:inline-block; width:3px; height:1.6rem; background:var(--accent);
+    margin-left:.2rem; animation: blink 1s step-start infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .keyboard{ display:flex; flex-direction:column; gap:.7rem; }
+  .kb-row{ display:flex; gap:.7rem; }
+  .key{
+    background:var(--surface); border-radius:.6rem;
+    width:3.1rem; height:3.1rem;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; font-size:1.1rem;
+  }
+  .key:focus{ background:var(--surface-hi); }
+  .key-wide{ width:12rem; }
+  .key-action{
+    background:var(--surface); color:var(--text-muted); font-size:.95rem; font-weight:600;
+    padding:0 1.3rem; height:3.1rem; border-radius:.6rem; display:flex; align-items:center;
+  }
+  .key-next{ background:var(--accent); color:#062033; }
+  .key-next:focus{ background:var(--accent-2); }
+
+  /* ---------- Color picker ---------- */
+  .swatch-row{ display:flex; gap:2.2rem; margin-bottom:2.4rem; }
+  .swatch{
+    width:7rem; height:7rem; border-radius:50%; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    border:3px solid transparent;
+  }
+  .swatch.selected{ border-color:#fff; }
+  .swatch.selected:before{
+    content:'✓'; font-size:2rem; font-weight:900; color:#fff;
+    text-shadow:0 1px 4px rgba(0,0,0,.5);
+  }
+  .create-row .tile{ width:fit-content; }
+
+  /* ---------- Generic tiles / buttons ---------- */
+  .tile{
+    padding:1rem 2rem; border-radius:.7rem; font-weight:700; font-size:1.05rem;
+  }
+  .primary-btn{ background:var(--accent); color:#062033; }
+  .primary-btn:focus{ background:var(--accent-2); }
+  .secondary-btn{ background:var(--surface); color:var(--text); border:1px solid #2c3444; }
+
+  /* ---------- Home screen ---------- */
+  .home-content{ display:flex; flex-direction:column; align-items:flex-start; gap:1.4rem; margin-top:2rem; }
+  .home-avatar{
+    width:6rem; height:6rem; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2rem; color:#fff;
+  }
+  .home-actions{ display:flex; gap:1rem; }
+
+  /* ---------- Settings screen ---------- */
+  .lang-list{ display:flex; flex-direction:column; gap:.8rem; margin-bottom:2rem; }
+  .lang-row{
+    display:flex; align-items:center; gap:1rem;
+    background:var(--surface); border-radius:.7rem;
+    padding:.9rem 1.4rem; width:fit-content; min-width:16rem;
+  }
+  .lang-ring{
+    width:1.3rem; height:1.3rem; border-radius:50%;
+    border:2px solid var(--text-muted);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .lang-ring::after{
+    content:''; width:.6rem; height:.6rem; border-radius:50%;
+    background:var(--accent); transform:scale(0); transition:transform .15s ease;
+  }
+  .lang-row.selected .lang-ring{ border-color:var(--accent); }
+  .lang-row.selected .lang-ring::after{ transform:scale(1); }
+  .lang-label{ font-weight:600; font-size:1.05rem; color:var(--text-muted); }
+  .lang-row.selected .lang-label{ color:var(--text); }
+</style>
 </head>
 <body>
-    <h1>hello</h1>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">zum<span class="o-dot"></span></div>
+    <div class="remote-hint">
+      <span class="chip"><span class="glyph">&#10018;</span><span id="hintMoveText">d-pad to move</span></span>
+      <span class="chip"><span class="glyph">&#9675;</span><span id="hintSelectText">select to choose</span></span>
+      <span class="chip"><span class="glyph">&#8617;</span><span id="hintBackText">back to return</span></span>
+    </div>
+  </div>
+
+  <main>
+    <section class="screen active" id="screen-profiles" data-screen="profiles">
+      <h1 class="screen-title" id="profilesTitle">Who's watching?</h1>
+      <p class="screen-sub" id="profilesSub">Select a profile, or add a new one.</p>
+      <div class="profile-grid" id="profileGrid"></div>
+    </section>
+
+    <section class="screen" id="screen-name" data-screen="name">
+      <h1 class="screen-title" id="nameTitle">What's your name?</h1>
+      <p class="screen-sub" id="nameSub">Use the d-pad to move, and select to choose a letter.</p>
+      <div class="name-display"><span id="nameText"></span><span class="cursor"></span></div>
+      <div class="keyboard" id="keyboard"></div>
+    </section>
+
+    <section class="screen" id="screen-color" data-screen="color">
+      <h1 class="screen-title" id="colorTitle">Choose a profile picture</h1>
+      <p class="screen-sub" id="colorSub"></p>
+      <div class="swatch-row" id="swatchRow"></div>
+      <div class="create-row">
+        <div class="tile primary-btn focusable" id="createBtn" tabindex="0">Create Profile</div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-home" data-screen="home">
+      <div class="home-content">
+        <div class="home-avatar" id="homeAvatar"></div>
+        <h1 class="screen-title" id="homeWelcome"></h1>
+        <p class="screen-sub" id="homeSub">This is a placeholder for your Fire TV app's main content.</p>
+        <div class="home-actions">
+          <div class="tile secondary-btn focusable" id="switchBtn" tabindex="0">Switch Profiles</div>
+          <div class="tile secondary-btn focusable" id="homeSettingsBtn" tabindex="0">Settings</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-settings" data-screen="settings">
+      <h1 class="screen-title" id="settingsTitle">Settings</h1>
+      <p class="screen-sub" id="settingsSub">Choose your language.</p>
+      <div class="lang-list" id="langList"></div>
+      <div class="create-row">
+        <div class="tile primary-btn focusable" id="settingsDoneBtn" tabindex="0">Done</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const COLORS = [
+    { id:'red',   hex:'#e3402c', label:'Red'   },
+    { id:'blue',  hex:'#2f6fed', label:'Blue'  },
+    { id:'green', hex:'#2fae66', label:'Green' }
+  ];
+  const colorHex = id => COLORS.find(c=>c.id===id).hex;
+
+  let profiles = [];
+  let creating = { name:'', color:null };
+  let currentProfileIndex = null;
+
+  const LANGUAGES = ['English', 'Español', 'Français', 'Deutsch', 'Português', '日本語'];
+  let language = 'English';
+  let settingsReturnScreen = 'profiles';
+
+  const LANG_CODES = {
+    'English':'en', 'Español':'es', 'Français':'fr',
+    'Deutsch':'de', 'Português':'pt', '日本語':'ja'
+  };
+
+  const translations = {
+    English: {
+      hintMove:'d-pad to move', hintSelect:'select to choose', hintBack:'back to return',
+      profilesTitle:"Who's watching?", profilesSub:'Select a profile, or add a new one.',
+      addProfile:'Add Profile', settingsLabel:'Settings',
+      nameTitle:"What's your name?", nameSub:'Use the d-pad to move, and select to choose a letter.',
+      space:'Space', delete:'Delete', next:'Next',
+      colorTitle:'Choose a profile picture', colorSub:name=>`Pick a color for ${name}'s avatar.`,
+      createProfile:'Create Profile',
+      homeSub:"This is a placeholder for your Fire TV app's main content.",
+      switchProfiles:'Switch Profiles', welcome:name=>`Welcome, ${name}`,
+      settingsTitle:'Settings', settingsSub:'Choose your language.', done:'Done'
+    },
+    'Español': {
+      hintMove:'d-pad para moverte', hintSelect:'selecciona para elegir', hintBack:'atrás para volver',
+      profilesTitle:'¿Quién está viendo?', profilesSub:'Selecciona un perfil o añade uno nuevo.',
+      addProfile:'Añadir perfil', settingsLabel:'Ajustes',
+      nameTitle:'¿Cuál es tu nombre?', nameSub:'Usa el d-pad para moverte y selecciona para elegir una letra.',
+      space:'Espacio', delete:'Borrar', next:'Siguiente',
+      colorTitle:'Elige una foto de perfil', colorSub:name=>`Elige un color para el avatar de ${name}.`,
+      createProfile:'Crear perfil',
+      homeSub:'Este es un espacio reservado para el contenido principal de tu app de Fire TV.',
+      switchProfiles:'Cambiar de perfil', welcome:name=>`Bienvenido, ${name}`,
+      settingsTitle:'Ajustes', settingsSub:'Elige tu idioma.', done:'Listo'
+    },
+    'Français': {
+      hintMove:'croix directionnelle pour se déplacer', hintSelect:'sélection pour choisir', hintBack:'retour pour revenir',
+      profilesTitle:'Qui regarde ?', profilesSub:'Sélectionnez un profil ou ajoutez-en un nouveau.',
+      addProfile:'Ajouter un profil', settingsLabel:'Paramètres',
+      nameTitle:'Quel est votre nom ?', nameSub:'Utilisez la croix directionnelle pour vous déplacer et sélectionnez pour choisir une lettre.',
+      space:'Espace', delete:'Supprimer', next:'Suivant',
+      colorTitle:'Choisissez une photo de profil', colorSub:name=>`Choisissez une couleur pour l'avatar de ${name}.`,
+      createProfile:'Créer le profil',
+      homeSub:'Ceci est un espace réservé pour le contenu principal de votre application Fire TV.',
+      switchProfiles:'Changer de profil', welcome:name=>`Bienvenue, ${name}`,
+      settingsTitle:'Paramètres', settingsSub:'Choisissez votre langue.', done:'Terminé'
+    },
+    Deutsch: {
+      hintMove:'Steuerkreuz zum Bewegen', hintSelect:'Auswahl zum Bestätigen', hintBack:'Zurück zum Verlassen',
+      profilesTitle:'Wer schaut zu?', profilesSub:'Wähle ein Profil aus oder füge ein neues hinzu.',
+      addProfile:'Profil hinzufügen', settingsLabel:'Einstellungen',
+      nameTitle:'Wie heißt du?', nameSub:'Bewege dich mit dem Steuerkreuz und wähle einen Buchstaben aus.',
+      space:'Leerzeichen', delete:'Löschen', next:'Weiter',
+      colorTitle:'Profilbild auswählen', colorSub:name=>`Wähle eine Farbe für ${name}s Avatar.`,
+      createProfile:'Profil erstellen',
+      homeSub:'Dies ist ein Platzhalter für den Hauptinhalt deiner Fire TV App.',
+      switchProfiles:'Profil wechseln', welcome:name=>`Willkommen, ${name}`,
+      settingsTitle:'Einstellungen', settingsSub:'Wähle deine Sprache.', done:'Fertig'
+    },
+    'Português': {
+      hintMove:'direcional para mover', hintSelect:'selecionar para escolher', hintBack:'voltar para retornar',
+      profilesTitle:'Quem está assistindo?', profilesSub:'Selecione um perfil ou adicione um novo.',
+      addProfile:'Adicionar perfil', settingsLabel:'Configurações',
+      nameTitle:'Qual é o seu nome?', nameSub:'Use o direcional para mover e selecione para escolher uma letra.',
+      space:'Espaço', delete:'Apagar', next:'Próximo',
+      colorTitle:'Escolha uma foto de perfil', colorSub:name=>`Escolha uma cor para o avatar de ${name}.`,
+      createProfile:'Criar perfil',
+      homeSub:'Este é um espaço reservado para o conteúdo principal do seu app Fire TV.',
+      switchProfiles:'Trocar de perfil', welcome:name=>`Bem-vindo, ${name}`,
+      settingsTitle:'Configurações', settingsSub:'Escolha seu idioma.', done:'Concluído'
+    },
+    '日本語': {
+      hintMove:'十字キーで移動', hintSelect:'決定で選択', hintBack:'戻るで戻る',
+      profilesTitle:'誰が見ますか?', profilesSub:'プロフィールを選ぶか、新しく追加してください。',
+      addProfile:'プロフィールを追加', settingsLabel:'設定',
+      nameTitle:'お名前は?', nameSub:'十字キーで移動し、決定ボタンで文字を選んでください。',
+      space:'スペース', delete:'削除', next:'次へ',
+      colorTitle:'プロフィール画像を選ぶ', colorSub:name=>`${name}のアバターの色を選んでください。`,
+      createProfile:'プロフィールを作成',
+      homeSub:'ここにFire TVアプリのメインコンテンツが表示されます。',
+      switchProfiles:'プロフィールを切り替える', welcome:name=>`ようこそ、${name}さん`,
+      settingsTitle:'設定', settingsSub:'言語を選んでください。', done:'完了'
+    }
+  };
+
+  // ---------- Screen management ----------
+  function showScreen(name, focusEl){
+    document.querySelectorAll('.screen').forEach(s=>{
+      s.classList.toggle('active', s.dataset.screen === name);
+    });
+    requestAnimationFrame(()=>{
+      if(focusEl){ focusEl.focus(); }
+      else{
+        const first = document.querySelector('.screen.active .focusable');
+        if(first) first.focus();
+      }
+    });
+  }
+
+  function goBack(){
+    const active = document.querySelector('.screen.active').dataset.screen;
+    if(active === 'name'){
+      creating = { name:'', color:null };
+      showScreen('profiles');
+    } else if(active === 'color'){
+      showScreen('name');
+      updateNameText();
+    } else if(active === 'home'){
+      showScreen('profiles');
+    } else if(active === 'settings'){
+      showScreen(settingsReturnScreen);
+    }
+  }
+
+  // ---------- Profiles screen ----------
+  function renderProfiles(focusLast){
+    const grid = document.getElementById('profileGrid');
+    grid.innerHTML = '';
+    profiles.forEach((p, i)=>{
+      const tile = document.createElement('div');
+      tile.className = 'profile-tile focusable';
+      tile.tabIndex = 0;
+      tile.innerHTML = `
+        <div class="avatar" style="background:${p.color}">${p.name.charAt(0).toUpperCase()}</div>
+        <div class="profile-name">${escapeHtml(p.name)}</div>`;
+      tile.addEventListener('click', ()=> selectProfile(i));
+      grid.appendChild(tile);
+    });
+
+    const addTile = document.createElement('div');
+    addTile.className = 'profile-tile focusable';
+    addTile.tabIndex = 0;
+    addTile.innerHTML = `
+      <div class="avatar add-avatar"></div>
+      <div class="profile-name" id="addProfileLabel">Add Profile</div>`;
+    addTile.addEventListener('click', startCreateProfile);
+    grid.appendChild(addTile);
+
+    const settingsTile = document.createElement('div');
+    settingsTile.className = 'profile-tile focusable';
+    settingsTile.tabIndex = 0;
+    settingsTile.innerHTML = `
+      <div class="avatar settings-avatar"></div>
+      <div class="profile-name" id="settingsProfileLabel">Settings</div>`;
+    settingsTile.addEventListener('click', ()=> openSettings('profiles'));
+    grid.appendChild(settingsTile);
+
+    applyLanguage();
+    showScreen('profiles', focusLast ? grid.children[profiles.length-1] : null);
+  }
+
+  function selectProfile(i){
+    currentProfileIndex = i;
+    const p = profiles[i];
+    document.getElementById('homeAvatar').style.background = p.color;
+    document.getElementById('homeAvatar').textContent = p.name.charAt(0).toUpperCase();
+    document.getElementById('homeWelcome').textContent = translations[language].welcome(p.name);
+    showScreen('home');
+  }
+
+  // ---------- Name screen ----------
+  function startCreateProfile(){
+    creating = { name:'', color:null };
+    showScreen('name');
+    updateNameText();
+  }
+
+  function updateNameText(){
+    document.getElementById('nameText').textContent = creating.name;
+  }
+
+  function buildKeyboard(){
+    const kb = document.getElementById('keyboard');
+    const rows = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+    rows.forEach(rowStr=>{
+      const row = document.createElement('div');
+      row.className = 'kb-row';
+      [...rowStr].forEach(ch=>{
+        const key = document.createElement('div');
+        key.className = 'key focusable';
+        key.tabIndex = 0;
+        key.textContent = ch;
+        key.addEventListener('click', ()=> typeChar(ch));
+        row.appendChild(key);
+      });
+      kb.appendChild(row);
+    });
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'kb-row';
+
+    const spaceKey = document.createElement('div');
+    spaceKey.className = 'key-action key-wide focusable';
+    spaceKey.id = 'kbSpace';
+    spaceKey.tabIndex = 0;
+    spaceKey.textContent = 'Space';
+    spaceKey.addEventListener('click', ()=> typeChar(' '));
+
+    const delKey = document.createElement('div');
+    delKey.className = 'key-action focusable';
+    delKey.id = 'kbDelete';
+    delKey.tabIndex = 0;
+    delKey.textContent = '⌫ Delete';
+    delKey.addEventListener('click', deleteChar);
+
+    const nextKey = document.createElement('div');
+    nextKey.className = 'key-action key-next focusable';
+    nextKey.id = 'kbNext';
+    nextKey.tabIndex = 0;
+    nextKey.textContent = 'Next →';
+    nextKey.addEventListener('click', goToColorScreen);
+
+    actionRow.appendChild(spaceKey);
+    actionRow.appendChild(delKey);
+    actionRow.appendChild(nextKey);
+    kb.appendChild(actionRow);
+  }
+
+  function typeChar(ch){
+    if(creating.name.length >= 20) return;
+    creating.name += ch;
+    updateNameText();
+  }
+  function deleteChar(){
+    creating.name = creating.name.slice(0, -1);
+    updateNameText();
+  }
+  function goToColorScreen(){
+    if(creating.name.trim().length === 0){
+      shakeEl(document.querySelector('.name-display'));
+      return;
+    }
+    document.getElementById('colorSub').textContent = translations[language].colorSub(creating.name);
+    showScreen('color');
+  }
+
+  // ---------- Color screen ----------
+  function buildSwatches(){
+    const row = document.getElementById('swatchRow');
+    COLORS.forEach(c=>{
+      const sw = document.createElement('div');
+      sw.className = 'swatch focusable';
+      sw.tabIndex = 0;
+      sw.style.background = c.hex;
+      sw.dataset.color = c.id;
+      sw.addEventListener('click', ()=>{
+        creating.color = c.hex;
+        row.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+        sw.classList.add('selected');
+      });
+      row.appendChild(sw);
+    });
+  }
+
+  document.getElementById('createBtn').addEventListener('click', ()=>{
+    if(!creating.color){
+      shakeEl(document.getElementById('swatchRow'));
+      return;
+    }
+    profiles.push({ name: creating.name.trim(), color: creating.color });
+    creating = { name:'', color:null };
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+    renderProfiles(true);
+  });
+
+  document.getElementById('switchBtn').addEventListener('click', ()=>{
+    currentProfileIndex = null;
+    showScreen('profiles');
+  });
+
+  document.getElementById('homeSettingsBtn').addEventListener('click', ()=> openSettings('home'));
+
+  // ---------- Settings screen ----------
+  function openSettings(fromScreen){
+    settingsReturnScreen = fromScreen;
+    showScreen('settings');
+  }
+
+  function buildSettings(){
+    const list = document.getElementById('langList');
+    LANGUAGES.forEach(lang=>{
+      const row = document.createElement('div');
+      row.className = 'lang-row focusable' + (lang === language ? ' selected' : '');
+      row.tabIndex = 0;
+      row.dataset.lang = lang;
+      row.innerHTML = `<span class="lang-ring"></span><span class="lang-label">${lang}</span>`;
+      row.addEventListener('click', ()=>{
+        language = lang;
+        document.querySelectorAll('.lang-row').forEach(r=>{
+          r.classList.toggle('selected', r.dataset.lang === lang);
+        });
+        applyLanguage();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function applyLanguage(){
+    const t = translations[language];
+
+    const hintMove = document.getElementById('hintMoveText'); if(hintMove) hintMove.textContent = t.hintMove;
+    const hintSelect = document.getElementById('hintSelectText'); if(hintSelect) hintSelect.textContent = t.hintSelect;
+    const hintBack = document.getElementById('hintBackText'); if(hintBack) hintBack.textContent = t.hintBack;
+
+    document.getElementById('profilesTitle').textContent = t.profilesTitle;
+    document.getElementById('profilesSub').textContent = t.profilesSub;
+    const addLabel = document.getElementById('addProfileLabel'); if(addLabel) addLabel.textContent = t.addProfile;
+    const settingsProfileLabel = document.getElementById('settingsProfileLabel'); if(settingsProfileLabel) settingsProfileLabel.textContent = t.settingsLabel;
+
+    document.getElementById('nameTitle').textContent = t.nameTitle;
+    document.getElementById('nameSub').textContent = t.nameSub;
+    const kbSpace = document.getElementById('kbSpace'); if(kbSpace) kbSpace.textContent = t.space;
+    const kbDelete = document.getElementById('kbDelete'); if(kbDelete) kbDelete.textContent = '⌫ ' + t.delete;
+    const kbNext = document.getElementById('kbNext'); if(kbNext) kbNext.textContent = t.next + ' →';
+
+    document.getElementById('colorTitle').textContent = t.colorTitle;
+    document.getElementById('colorSub').textContent = t.colorSub(creating.name || '');
+    document.getElementById('createBtn').textContent = t.createProfile;
+
+    document.getElementById('homeSub').textContent = t.homeSub;
+    document.getElementById('switchBtn').textContent = t.switchProfiles;
+    document.getElementById('homeSettingsBtn').textContent = t.settingsLabel;
+    if(currentProfileIndex !== null && profiles[currentProfileIndex]){
+      document.getElementById('homeWelcome').textContent = t.welcome(profiles[currentProfileIndex].name);
+    }
+
+    document.getElementById('settingsTitle').textContent = t.settingsTitle;
+    document.getElementById('settingsSub').textContent = t.settingsSub;
+    document.getElementById('settingsDoneBtn').textContent = t.done;
+
+    document.documentElement.lang = LANG_CODES[language] || 'en';
+  }
+
+  document.getElementById('settingsDoneBtn').addEventListener('click', ()=>{
+    showScreen(settingsReturnScreen);
+  });
+
+  function shakeEl(el){
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ---------- Spatial navigation (D-pad) ----------
+  function getFocusables(){
+    const activeScreen = document.querySelector('.screen.active');
+    return Array.from(activeScreen.querySelectorAll('.focusable'))
+      .filter(el => el.offsetParent !== null);
+  }
+
+  function moveFocus(dir){
+    const focusables = getFocusables();
+    const current = document.activeElement;
+    if(!focusables.includes(current)){
+      if(focusables[0]) focusables[0].focus();
+      return;
+    }
+    const curRect = current.getBoundingClientRect();
+    const curCenter = { x: curRect.left + curRect.width/2, y: curRect.top + curRect.height/2 };
+
+    let best = null, bestScore = Infinity;
+    focusables.forEach(el=>{
+      if(el === current) return;
+      const r = el.getBoundingClientRect();
+      const c = { x: r.left + r.width/2, y: r.top + r.height/2 };
+      const dx = c.x - curCenter.x, dy = c.y - curCenter.y;
+      let primary, secondary, valid = false;
+      if(dir === 'left'){  valid = dx < -1; primary = -dx; secondary = Math.abs(dy); }
+      if(dir === 'right'){ valid = dx > 1;  primary = dx;  secondary = Math.abs(dy); }
+      if(dir === 'up'){    valid = dy < -1; primary = -dy; secondary = Math.abs(dx); }
+      if(dir === 'down'){  valid = dy > 1;  primary = dy;  secondary = Math.abs(dx); }
+      if(!valid) return;
+      const score = primary + secondary * 2;
+      if(score < bestScore){ bestScore = score; best = el; }
+    });
+
+    if(best){
+      best.focus();
+      best.scrollIntoView({ block:'nearest', inline:'nearest', behavior:'smooth' });
+    }
+  }
+
+  document.addEventListener('keydown', (e)=>{
+    const activeScreen = document.querySelector('.screen.active').dataset.screen;
+
+    switch(e.key){
+      case 'ArrowUp':    e.preventDefault(); moveFocus('up'); break;
+      case 'ArrowDown':  e.preventDefault(); moveFocus('down'); break;
+      case 'ArrowLeft':  e.preventDefault(); moveFocus('left'); break;
+      case 'ArrowRight': e.preventDefault(); moveFocus('right'); break;
+      case 'Enter':      e.preventDefault(); document.activeElement.click(); break;
+      case 'Escape':     e.preventDefault(); goBack(); break;
+      case 'Backspace':
+        e.preventDefault();
+        if(activeScreen === 'name'){ deleteChar(); }
+        else{ goBack(); }
+        break;
+      default:
+        // Convenience: allow direct typing on the name screen from a real keyboard.
+        if(activeScreen === 'name' && e.key.length === 1 && /[a-zA-Z0-9 ]/.test(e.key)){
+          typeChar(e.key.toUpperCase());
+        }
+    }
+  });
+
+  // ---------- Init ----------
+  buildKeyboard();
+  buildSwatches();
+  buildSettings();
+  applyLanguage();
+  renderProfiles(false);
+</script>
+
 </body>
 </html>
