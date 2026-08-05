@@ -28,7 +28,7 @@
 
   *{box-sizing:border-box; margin:0; padding:0;}
 
-  html{font-size:20px;}
+  html{font-size: clamp(13px, 1.05vw, 22px);}
 
   body{
     width:100vw; height:100vh; overflow:hidden;
@@ -206,18 +206,25 @@
   .key-next:focus{ background:var(--accent-2); }
 
   /* ---------- Color picker ---------- */
-  .swatch-row{ display:flex; gap:2.2rem; margin-bottom:2.4rem; }
+  .swatch-row{ display:flex; flex-wrap:wrap; gap:1.6rem; margin-bottom:1.4rem; }
   .swatch{
-    width:7rem; height:7rem; border-radius:50%; position:relative;
+    width:6rem; height:6rem; border-radius:50%; position:relative;
     display:flex; align-items:center; justify-content:center;
     border:3px solid transparent;
   }
   .swatch.selected{ border-color:#fff; }
-  .swatch.selected:before{
-    content:'✓'; font-size:2rem; font-weight:900; color:#fff;
-    text-shadow:0 1px 4px rgba(0,0,0,.5);
+  .swatch-icon-emoji{ font-size:2.4rem; line-height:1; }
+  .swatch-check{
+    display:none; align-items:center; justify-content:center;
+    position:absolute; bottom:-.3rem; right:-.3rem;
+    width:1.6rem; height:1.6rem; border-radius:50%;
+    background:#fff; color:var(--accent); font-weight:900; font-size:.9rem;
   }
+  .swatch.selected .swatch-check{ display:flex; }
   .create-row{ display:flex; gap:1rem; }
+  .danger-btn{ background:transparent; border:2px solid var(--danger); color:var(--danger); }
+  .danger-btn:focus{ background:rgba(255,90,95,.15); }
+  .danger-btn.armed{ background:var(--danger); color:#fff; }
   .create-row .tile{ width:fit-content; }
 
   /* ---------- Generic tiles / buttons ---------- */
@@ -481,9 +488,12 @@
     <section class="screen" id="screen-color" data-screen="color">
       <h1 class="screen-title" id="colorTitle">Choose a profile picture</h1>
       <p class="screen-sub" id="colorSub"></p>
+      <div class="category-pills" id="avatarCategoryPills"></div>
       <div class="swatch-row" id="swatchRow"></div>
+      <p class="auth-error" id="colorError"></p>
       <div class="create-row">
         <div class="tile primary-btn focusable" id="createBtn" tabindex="0">Create Profile</div>
+        <div class="tile danger-btn focusable" id="deleteProfileBtn" tabindex="0" style="display:none;">Delete Profile</div>
       </div>
     </section>
 
@@ -629,7 +639,6 @@
   const MAX_PROFILES = 5;
   let currentUser = null;
   let editMode = false;
-  let armedDeleteId = null;
 
   const ADMIN_EMAIL = 'techsaplingeducation@gmail.com';
   let isAdmin = false;
@@ -643,15 +652,30 @@
   let overlayTimer = null;
   let searchQuery = '';
 
-  const COLORS = [
-    { id:'red',   hex:'#e3402c', label:'Red'   },
-    { id:'blue',  hex:'#2f6fed', label:'Blue'  },
-    { id:'green', hex:'#2fae66', label:'Green' }
+  const AVATAR_CATEGORIES = [
+    { id:'colors', label:'Colors', options:[
+      { bg:'#e3402c' }, { bg:'#2f6fed' }, { bg:'#2fae66' }, { bg:'#a855f7' },
+      { bg:'#f59e0b' }, { bg:'#14b8a6' }, { bg:'#ec4899' }, { bg:'#eab308' }
+    ]},
+    { id:'animals', label:'Animals', options:[
+      { icon:'🐶', bg:'#e3402c' }, { icon:'🐱', bg:'#2f6fed' }, { icon:'🦊', bg:'#f59e0b' }, { icon:'🐼', bg:'#334155' },
+      { icon:'🦁', bg:'#eab308' }, { icon:'🐵', bg:'#a855f7' }, { icon:'🐰', bg:'#ec4899' }, { icon:'🐨', bg:'#14b8a6' }
+    ]},
+    { id:'space', label:'Space', options:[
+      { icon:'🚀', bg:'#2f6fed' }, { icon:'🌟', bg:'#f59e0b' }, { icon:'🪐', bg:'#a855f7' }, { icon:'🌙', bg:'#334155' },
+      { icon:'👽', bg:'#2fae66' }, { icon:'☄️', bg:'#e3402c' }
+    ]},
+    { id:'fun', label:'Fun', options:[
+      { icon:'🎮', bg:'#a855f7' }, { icon:'🎨', bg:'#ec4899' }, { icon:'⚽', bg:'#2fae66' }, { icon:'🎵', bg:'#2f6fed' },
+      { icon:'🍕', bg:'#f59e0b' }, { icon:'🌈', bg:'#e3402c' }
+    ]}
   ];
-  const colorHex = id => COLORS.find(c=>c.id===id).hex;
+  let activeAvatarCategory = 'colors';
+  let editingProfileId = null;
+  let deleteArmed = false;
 
   let profiles = [];
-  let creating = { name:'', color:null };
+  let creating = { name:'', color:null, icon:null };
   let currentProfileIndex = null;
 
   let loginForm = { email:'', password:'', active:'email' };
@@ -802,7 +826,8 @@
     if(active === 'login' || active === 'create'){
       showScreen('auth');
     } else if(active === 'name'){
-      creating = { name:'', color:null };
+      creating = { name:'', color:null, icon:null };
+      editingProfileId = null;
       showScreen('profiles');
     } else if(active === 'color'){
       showScreen('name');
@@ -813,7 +838,6 @@
       showScreen(settingsReturnScreen);
     } else if(active === 'profiles' && editMode){
       editMode = false;
-      armedDeleteId = null;
       renderProfiles(false);
     } else if(active === 'search'){
       showScreen('home');
@@ -837,13 +861,12 @@
       const snap = await getDocs(collection(db, 'users', uid, 'profiles'));
       snap.forEach(d=>{
         const data = d.data();
-        profiles.push({ id: d.id, name: data.name, color: data.color, recentlyWatched: data.recentlyWatched || [] });
+        profiles.push({ id: d.id, name: data.name, color: data.color, icon: data.icon || null, recentlyWatched: data.recentlyWatched || [] });
       });
     }catch(err){
       console.error('Failed to load profiles:', err);
     }
     editMode = false;
-    armedDeleteId = null;
   }
 
   // ---------- Profiles screen ----------
@@ -853,15 +876,15 @@
 
     profiles.forEach((p)=>{
       const tile = document.createElement('div');
-      tile.className = 'profile-tile focusable' + (editMode ? ' edit-mode' : '') + (armedDeleteId === p.id ? ' armed' : '');
+      tile.className = 'profile-tile focusable' + (editMode ? ' edit-mode' : '');
       tile.tabIndex = 0;
       tile.innerHTML = `
         <div class="avatar-wrap">
-          <div class="avatar" style="background:${p.color}">${p.name.charAt(0).toUpperCase()}</div>
-          <span class="delete-badge">&#10005;</span>
+          <div class="avatar" style="background:${p.color}">${p.icon ? p.icon : p.name.charAt(0).toUpperCase()}</div>
+          <span class="edit-badge">&#9998;</span>
         </div>
-        <div class="profile-name">${armedDeleteId === p.id ? translations[language].confirmDelete(p.name) : escapeHtml(p.name)}</div>`;
-      tile.addEventListener('click', ()=> handleProfileTileClick(p));
+        <div class="profile-name">${escapeHtml(p.name)}</div>`;
+      tile.addEventListener('click', ()=> editMode ? openEditProfile(p) : selectProfile(p));
       grid.appendChild(tile);
     });
 
@@ -885,7 +908,6 @@
         <div class="profile-name" id="manageProfileLabel">Manage Profiles</div>`;
       manageTile.addEventListener('click', ()=>{
         editMode = !editMode;
-        armedDeleteId = null;
         renderProfiles(false);
       });
       grid.appendChild(manageTile);
@@ -906,30 +928,11 @@
     showScreen('profiles', focusLast ? grid.children[Math.max(0, profiles.length-1)] : null);
   }
 
-  function handleProfileTileClick(p){
-    if(!editMode){
-      selectProfile(p);
-      return;
-    }
-    if(armedDeleteId === p.id){
-      deleteProfile(p.id);
-    } else {
-      armedDeleteId = p.id;
-      renderProfiles(false);
-    }
-  }
-
-  async function deleteProfile(profileId){
-    if(!currentUser) return;
-    try{
-      await deleteDoc(doc(db, 'users', currentUser.uid, 'profiles', profileId));
-      profiles = profiles.filter(p => p.id !== profileId);
-      armedDeleteId = null;
-      renderProfiles(false);
-    }catch(err){
-      console.error(err);
-      shakeEl(document.getElementById('profileGrid'));
-    }
+  function openEditProfile(p){
+    editingProfileId = p.id;
+    creating = { name: p.name, color: p.color, icon: p.icon || null };
+    showScreen('name');
+    updateNameText();
   }
 
   // ---------- Shared content library ----------
@@ -947,12 +950,22 @@
     return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   }
 
+  function firestoreErrorMessage(err){
+    const map = {
+      'permission-denied': "You don't have permission to do that — make sure your Firestore security rules are deployed and up to date.",
+      'unavailable': 'Network error — check your connection and try again.',
+      'not-found': 'That item could not be found.',
+      'unauthenticated': 'You need to be logged in to do that.'
+    };
+    return map[err.code] || `Something went wrong (${err.code || err.message || 'unknown error'}). Please try again.`;
+  }
+
   // ---------- Home / library screen ----------
   function renderHome(){
     const p = profiles[currentProfileIndex];
     const navProfile = document.getElementById('navProfile');
     navProfile.style.background = p ? p.color : 'var(--surface)';
-    navProfile.textContent = p ? p.name.charAt(0).toUpperCase() : '';
+    navProfile.textContent = p ? (p.icon || p.name.charAt(0).toUpperCase()) : '';
     document.getElementById('navAdmin').style.display = isAdmin ? 'flex' : 'none';
     renderHero();
     renderRows();
@@ -1221,7 +1234,7 @@
           renderAdminList();
         }catch(err){
           console.error(err);
-          alert('Failed to delete. Please try again.');
+          alert(firestoreErrorMessage(err));
         }
       });
       list.appendChild(row);
@@ -1309,7 +1322,9 @@
 
   // ---------- Name screen ----------
   function startCreateProfile(){
-    creating = { name:'', color:null };
+    editingProfileId = null;
+    creating = { name:'', color:null, icon:null };
+    activeAvatarCategory = 'colors';
     showScreen('name');
     updateNameText();
   }
@@ -1380,53 +1395,138 @@
       return;
     }
     document.getElementById('colorSub').textContent = translations[language].colorSub(creating.name);
+    document.getElementById('createBtn').textContent = editingProfileId ? 'Save Changes' : translations[language].createProfile;
+    deleteArmed = false;
+    clearColorError();
+    renderDeleteProfileBtn();
+    // If editing, jump to whichever category the current picture lives in so it's visible right away.
+    if(editingProfileId){
+      const match = AVATAR_CATEGORIES.find(cat => cat.options.some(o =>
+        o.bg === creating.color && (o.icon || null) === (creating.icon || null)
+      ));
+      activeAvatarCategory = match ? match.id : 'colors';
+    }
+    buildAvatarCategoryPills();
+    renderSwatchGrid();
     showScreen('color');
   }
 
-  // ---------- Color screen ----------
-  function buildSwatches(){
+  // ---------- Color / avatar picker screen ----------
+  function buildAvatarCategoryPills(){
+    const wrap = document.getElementById('avatarCategoryPills');
+    wrap.innerHTML = '';
+    AVATAR_CATEGORIES.forEach(cat=>{
+      const pill = document.createElement('div');
+      pill.className = 'pill focusable' + (cat.id === activeAvatarCategory ? ' active-pill' : '');
+      pill.tabIndex = 0;
+      pill.dataset.cat = cat.id;
+      pill.textContent = cat.label;
+      pill.addEventListener('click', ()=>{
+        activeAvatarCategory = cat.id;
+        wrap.querySelectorAll('.pill').forEach(p=>p.classList.remove('active-pill'));
+        pill.classList.add('active-pill');
+        renderSwatchGrid();
+      });
+      wrap.appendChild(pill);
+    });
+  }
+
+  function renderSwatchGrid(){
     const row = document.getElementById('swatchRow');
-    COLORS.forEach(c=>{
+    row.innerHTML = '';
+    const cat = AVATAR_CATEGORIES.find(c => c.id === activeAvatarCategory) || AVATAR_CATEGORIES[0];
+    cat.options.forEach(opt=>{
       const sw = document.createElement('div');
       sw.className = 'swatch focusable';
       sw.tabIndex = 0;
-      sw.style.background = c.hex;
-      sw.dataset.color = c.id;
+      sw.style.background = opt.bg;
+      sw.innerHTML = (opt.icon ? `<span class="swatch-icon-emoji">${opt.icon}</span>` : '') + `<span class="swatch-check">&#10003;</span>`;
+      const isSelected = creating.color === opt.bg && (creating.icon || null) === (opt.icon || null);
+      if(isSelected) sw.classList.add('selected');
       sw.addEventListener('click', ()=>{
-        creating.color = c.hex;
+        creating.color = opt.bg;
+        creating.icon = opt.icon || null;
         row.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
         sw.classList.add('selected');
+        clearColorError();
       });
       row.appendChild(sw);
     });
   }
 
+  function showColorError(msg){ document.getElementById('colorError').textContent = msg; }
+  function clearColorError(){ document.getElementById('colorError').textContent = ''; }
+
+  function renderDeleteProfileBtn(){
+    const btn = document.getElementById('deleteProfileBtn');
+    if(!editingProfileId){ btn.style.display = 'none'; return; }
+    btn.style.display = 'flex';
+    btn.classList.toggle('armed', deleteArmed);
+    btn.textContent = deleteArmed ? 'Select again to confirm' : 'Delete Profile';
+  }
+
   document.getElementById('createBtn').addEventListener('click', async ()=>{
     if(!creating.color){
       shakeEl(document.getElementById('swatchRow'));
+      showColorError('Pick a profile picture to continue.');
       return;
     }
-    if(!currentUser) return;
-    if(profiles.length >= MAX_PROFILES){
+    if(!currentUser){
+      showColorError('You need to be logged in to do that.');
+      return;
+    }
+    if(!editingProfileId && profiles.length >= MAX_PROFILES){
       shakeEl(document.getElementById('profileGrid'));
       showScreen('profiles');
       return;
     }
+    clearColorError();
     try{
-      const profileData = {
-        name: creating.name.trim(),
-        color: creating.color,
-        recentlyWatched: [],
-        createdAt: serverTimestamp()
-      };
-      const ref = await addDoc(collection(db, 'users', currentUser.uid, 'profiles'), profileData);
-      profiles.push({ id: ref.id, name: profileData.name, color: profileData.color, recentlyWatched: [] });
-      creating = { name:'', color:null };
-      document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+      if(editingProfileId){
+        const updates = { name: creating.name.trim(), color: creating.color, icon: creating.icon || null };
+        await updateDoc(doc(db, 'users', currentUser.uid, 'profiles', editingProfileId), updates);
+        const idx = profiles.findIndex(p => p.id === editingProfileId);
+        if(idx > -1) profiles[idx] = { ...profiles[idx], ...updates };
+        editingProfileId = null;
+      } else {
+        const profileData = {
+          name: creating.name.trim(),
+          color: creating.color,
+          icon: creating.icon || null,
+          recentlyWatched: [],
+          createdAt: serverTimestamp()
+        };
+        const ref = await addDoc(collection(db, 'users', currentUser.uid, 'profiles'), profileData);
+        profiles.push({ id: ref.id, name: profileData.name, color: profileData.color, icon: profileData.icon, recentlyWatched: [] });
+      }
+      creating = { name:'', color:null, icon:null };
+      deleteArmed = false;
       renderProfiles(true);
     }catch(err){
       console.error(err);
+      showColorError(firestoreErrorMessage(err));
       shakeEl(document.getElementById('swatchRow'));
+    }
+  });
+
+  document.getElementById('deleteProfileBtn').addEventListener('click', async ()=>{
+    if(!editingProfileId) return;
+    if(!deleteArmed){
+      deleteArmed = true;
+      renderDeleteProfileBtn();
+      return;
+    }
+    clearColorError();
+    try{
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'profiles', editingProfileId));
+      profiles = profiles.filter(p => p.id !== editingProfileId);
+      editingProfileId = null;
+      deleteArmed = false;
+      creating = { name:'', color:null, icon:null };
+      renderProfiles(false);
+    }catch(err){
+      console.error(err);
+      showColorError(firestoreErrorMessage(err));
     }
   });
 
@@ -1488,10 +1588,6 @@
     const addLabel = document.getElementById('addProfileLabel'); if(addLabel) addLabel.textContent = t.addProfile;
     const settingsProfileLabel = document.getElementById('settingsProfileLabel'); if(settingsProfileLabel) settingsProfileLabel.textContent = t.settingsLabel;
     const manageLabel = document.getElementById('manageProfileLabel'); if(manageLabel) manageLabel.textContent = editMode ? t.doneEditing : t.manageProfiles;
-    document.querySelectorAll('.profile-tile.armed .profile-name').forEach(el=>{
-      const p = profiles.find(pr => pr.id === armedDeleteId);
-      if(p) el.textContent = t.confirmDelete(p.name);
-    });
 
     document.getElementById('nameTitle').textContent = t.nameTitle;
     document.getElementById('nameSub').textContent = t.nameSub;
@@ -1501,7 +1597,7 @@
 
     document.getElementById('colorTitle').textContent = t.colorTitle;
     document.getElementById('colorSub').textContent = t.colorSub(creating.name || '');
-    document.getElementById('createBtn').textContent = t.createProfile;
+    document.getElementById('createBtn').textContent = editingProfileId ? 'Save Changes' : t.createProfile;
 
     document.getElementById('settingsTitle').textContent = t.settingsTitle;
     document.getElementById('settingsSub').textContent = t.settingsSub;
@@ -1675,7 +1771,7 @@
   onAuthStateChanged(auth, async (user)=>{
     if(user){
       currentUser = user;
-      isAdmin = user.email === ADMIN_EMAIL;
+      isAdmin = (user.email || '').trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
       await loadProfiles(user.uid);
       await loadContent();
       renderProfiles(false);
@@ -1686,7 +1782,7 @@
       contentList = [];
       currentProfileIndex = null;
       editMode = false;
-      armedDeleteId = null;
+      editingProfileId = null;
       document.getElementById('profileGrid').innerHTML = '';
       showScreen('auth');
     }
@@ -1770,7 +1866,7 @@
       renderAdminList();
     }catch(err){
       console.error(err);
-      document.getElementById('adminFormError').textContent = 'Failed to save. Check your connection and try again.';
+      document.getElementById('adminFormError').textContent = firestoreErrorMessage(err);
     }
   });
 
@@ -1874,7 +1970,6 @@
   setupAuthForm('login', loginForm);
   setupAuthForm('create', createForm);
   buildKeyboard();
-  buildSwatches();
   buildSettings();
   buildSearchKeyboard();
   applyLanguage();
