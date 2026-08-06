@@ -2,146 +2,419 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>zumo — Fire TV</title>
+<title>zumo — Fire TV Profiles</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.6.16/hls.min.js"></script>
 <style>
   :root{
-    --bg-0:#080808;
-    --bg-1:#0f1115;
-    --surface:#111218;
-    --surface-hi:#171920;
-    --accent:#e50914; /* Netflix red inspired */
-    --accent-2:#ff3b3b;
-    --accent-glow:rgba(229,9,20,.25);
-    --text:#f5f5f5;
-    --text-muted:#9aa3b2;
+    --bg-0:#090b10;
+    --bg-1:#12161f;
+    --surface:#1b212c;
+    --surface-hi:#242c3a;
+    --accent:#4fc3ff;
+    --accent-2:#8adcff;
+    --accent-glow:rgba(79,195,255,.55);
+    --text:#f5f1e8;
+    --text-muted:#8992a6;
+    --profile-red:#e3402c;
+    --profile-blue:#345fd6;
+    --profile-green:#2fae66;
     --danger:#ff5a5f;
-    --safe-x:5vw;
-    --safe-y:4vh;
+    --safe-x:6vw;
+    --safe-y:5vh;
   }
 
   *{box-sizing:border-box; margin:0; padding:0;}
-  html{font-size: clamp(13px, 1.05vw, 20px);}
+
+  html{font-size: clamp(13px, 1.05vw, 22px);}
 
   body{
     width:100vw; height:100vh; overflow:hidden;
-    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    background:
+      radial-gradient(ellipse 120% 80% at 50% -10%, #1c2333 0%, transparent 55%),
+      radial-gradient(ellipse 100% 60% at 80% 110%, rgba(79,195,255,.10) 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
     color:var(--text);
     font-family:'Nunito Sans', system-ui, sans-serif;
   }
 
   .app{ width:100%; height:100%; display:flex; flex-direction:column; }
 
-  /* Top bar */
+  /* ---------- Top bar ---------- */
   .topbar{
     display:flex; align-items:center; justify-content:space-between;
-    padding: var(--safe-y) var(--safe-x) 1rem;
+    padding: var(--safe-y) var(--safe-x) 1.5rem;
     flex-shrink:0;
   }
   .brand{
-    font-family:'Baloo 2', sans-serif; font-weight:800; font-size:1.6rem;
-    letter-spacing:.02em; display:flex; align-items:center; gap:.6rem;
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2rem;
+    letter-spacing:.01em; display:flex; align-items:center; gap:.02em;
     text-transform:lowercase;
   }
-  .brand .o-dot{ width:.62em; height:.62em; border-radius:50%; background:var(--accent); }
+  .brand .o-dot{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:.62em; height:.62em; border-radius:50%;
+    background:var(--accent);
+    margin:0 .01em;
+  }
+  .remote-hint{
+    display:flex; gap:1.1rem; font-size:.8rem; color:var(--text-muted); font-weight:600;
+    letter-spacing:.02em;
+  }
+  .remote-hint .chip{
+    display:inline-flex; align-items:center; gap:.5rem;
+    background:var(--surface); border:1px solid #2c3444; border-radius:999px;
+    padding:.4rem .9rem .4rem .5rem;
+  }
+  .remote-hint .glyph{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:1.6rem; height:1.6rem; border-radius:50%;
+    background:var(--bg-0); color:var(--text); font-size:.85rem; font-weight:700;
+  }
 
-  .remote-hint{ display:flex; gap:1rem; font-size:.85rem; color:var(--text-muted); font-weight:600; }
-  .remote-hint .chip{ background:transparent; padding:.2rem .6rem; border-radius:999px; color:var(--text-muted); }
-
-  /* Screens */
-  main{ position:relative; flex:1; padding: 0 var(--safe-x) var(--safe-y); overflow:hidden; }
-  .screen{ position:absolute; inset: 1rem var(--safe-x) var(--safe-y); display:none; flex-direction:column; }
+  /* ---------- Screens ---------- */
+  main{ position:relative; flex:1; padding: 1rem var(--safe-x) var(--safe-y); overflow:hidden; }
+  .screen{
+    position:absolute; inset: 1rem var(--safe-x) var(--safe-y);
+    display:none; flex-direction:column;
+    animation: fadeIn .35s ease;
+  }
   .screen.active{ display:flex; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
 
-  .screen-title{ font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2.2rem; margin-bottom:.4rem; }
-  .screen-sub{ color:var(--text-muted); font-size:1rem; margin-bottom:1rem; }
+  .screen-title{
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2.4rem;
+    margin-bottom:.4rem; letter-spacing:-.01em;
+  }
+  .screen-sub{ color:var(--text-muted); font-size:1.1rem; margin-bottom:1.6rem; }
 
-  /* Focus */
-  .focusable{ position:relative; outline:none; cursor:pointer; }
-  .focusable:focus{ transform:translateY(-4px); }
+  /* ---------- Focus system ---------- */
+  .focusable{
+    position:relative;
+    outline:none; cursor:pointer;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .focusable::after{
+    content:'';
+    position:absolute;
+    left:50%; bottom:-.6rem;
+    width:60%; height:3px; border-radius:2px;
+    background:var(--accent);
+    box-shadow:0 0 8px 1px var(--accent-glow);
+    transform:translateX(-50%) scaleX(0);
+    transition: transform .15s ease;
+  }
+  .focusable:focus{
+    transform:translateY(-2px);
+    z-index:2;
+  }
+  .focusable:focus::after{
+    transform:translateX(-50%) scaleX(1);
+  }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-10px); }
+    40%{ transform:translateX(10px); }
+    60%{ transform:translateX(-6px); }
+    80%{ transform:translateX(6px); }
+  }
+  .shake{ animation: shake .4s ease; }
 
-  /* Profiles */
-  .profile-grid{ display:flex; gap:2rem; align-items:flex-start; margin-top:1rem; flex-wrap:wrap; }
-  .profile-tile{ display:flex; flex-direction:column; align-items:center; gap:.6rem; width:8.5rem; }
-  .avatar{ width:7.5rem; height:7.5rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2rem; color:#fff; border:2px solid rgba(255,255,255,0.04); box-shadow:0 8px 24px rgba(2,6,12,0.6); transition:transform .15s ease; }
-  .profile-tile:focus .avatar, .profile-tile:hover .avatar{ transform:translateY(-6px); box-shadow:0 18px 36px rgba(2,6,12,0.6); }
-  .profile-name{ font-size:1rem; font-weight:700; color:var(--text-muted); text-align:center; }
+  /* ---------- Profile picker ---------- */
+  .profile-grid{
+    display:flex; gap:2.4rem; align-items:flex-start; margin-top:1rem; flex-wrap:wrap;
+  }
+  .profile-tile{ display:flex; flex-direction:column; align-items:center; gap:.9rem; width:9rem; }
+  .avatar{
+    width:8rem; height:8rem; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2.6rem; color:#fff;
+    background:var(--surface);
+    border:3px solid transparent;
+  }
+  .profile-name{ font-size:1.05rem; font-weight:600; color:var(--text-muted); text-align:center; }
+  .profile-tile:focus .profile-name{ color:var(--text); }
 
-  .add-avatar{ background:transparent; border:2px dashed rgba(255,255,255,0.06); color:var(--text-muted); font-size:2rem; }
+  .add-avatar{
+    background:transparent; border:3px dashed #3a4257; color:var(--text-muted);
+    font-size:2.6rem; font-weight:300;
+  }
   .add-avatar:before{ content:'+'; }
+  .profile-tile:focus .add-avatar{ border-color:var(--accent); color:var(--accent-2); }
 
-  /* Name entry */
-  .name-display{ background:var(--surface); border-radius:10px; padding:1rem 1.2rem; font-family:'Baloo 2', sans-serif; font-weight:700; font-size:1.6rem; min-width:20rem; border:1px solid rgba(255,255,255,0.03); }
+  .settings-avatar{
+    background:transparent; border:3px solid #3a4257; color:var(--text-muted);
+    font-size:2.2rem;
+  }
+  .settings-avatar:before{ content:'\2699'; }
+  .profile-tile:focus .settings-avatar{ border-color:var(--accent); color:var(--accent-2); }
 
-  /* Keyboard */
-  .keyboard{ display:flex; flex-direction:column; gap:.6rem; }
-  .kb-row{ display:flex; gap:.6rem; }
-  .key{ background:var(--surface); border-radius:8px; width:3rem; height:3rem; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .manage-avatar{
+    background:transparent; border:3px solid #3a4257; color:var(--text-muted);
+    font-size:2.2rem;
+  }
+  .manage-avatar:before{ content:'\270E'; }
+  .profile-tile:focus .manage-avatar{ border-color:var(--accent); color:var(--accent-2); }
+
+  .avatar-wrap{ position:relative; }
+  .edit-badge{
+    display:none; align-items:center; justify-content:center;
+    position:absolute; top:-.3rem; right:-.3rem;
+    width:1.8rem; height:1.8rem; border-radius:50%;
+    background:var(--accent); color:#062033; font-weight:800; font-size:1rem;
+  }
+  .profile-tile.edit-mode .edit-badge{ display:flex; }
+
+  .profile-count{ color:var(--text-muted); font-size:.9rem; margin-top:-1rem; margin-bottom:1.2rem; }
+
+  .auth-error{
+    color:var(--danger); font-size:.95rem; font-weight:600;
+    margin:-.8rem 0 1rem; min-height:1.2em;
+  }
+
+  /* ---------- Name entry ---------- */
+  .name-display{
+    background:var(--surface); border-radius:1rem; padding:1.1rem 1.6rem;
+    font-family:'Baloo 2', sans-serif; font-weight:600; font-size:1.8rem;
+    min-width:20rem; max-width:32rem; margin-bottom:1.8rem;
+    border:2px solid #2c3444;
+    display:flex; align-items:center; min-height:1.2em;
+  }
+  .cursor{
+    display:inline-block; width:3px; height:1.6rem; background:var(--accent);
+    margin-left:.2rem; animation: blink 1s step-start infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .keyboard{ display:flex; flex-direction:column; gap:.7rem; }
+  .kb-row{ display:flex; gap:.7rem; }
+  .key{
+    background:var(--surface); border-radius:.6rem;
+    width:3.1rem; height:3.1rem;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; font-size:1.1rem;
+  }
   .key:focus{ background:var(--surface-hi); }
+  .key-wide{ width:12rem; }
+  .key-action{
+    background:var(--surface); color:var(--text-muted); font-size:.95rem; font-weight:600;
+    padding:0 1.3rem; height:3.1rem; border-radius:.6rem; display:flex; align-items:center;
+  }
+  .key-next{ background:var(--accent); color:#062033; }
+  .key-next:focus{ background:var(--accent-2); }
 
-  /* Color picker */
-  .swatch-row{ display:flex; gap:1rem; margin-bottom:1rem; }
-  .swatch{ width:4.8rem; height:4.8rem; border-radius:50%; border:3px solid transparent; transition:transform .12s ease, border-color .12s ease; }
-  .swatch.selected{ border-color:#fff; transform:translateY(-6px); }
+  /* ---------- Color picker ---------- */
+  .swatch-row{ display:flex; flex-wrap:wrap; gap:1.6rem; margin-bottom:1.4rem; }
+  .swatch{
+    width:6rem; height:6rem; border-radius:50%; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    border:3px solid transparent;
+  }
+  .swatch.selected{ border-color:#fff; }
+  .swatch-icon-emoji{ font-size:2.4rem; line-height:1; }
+  .swatch-check{
+    display:none; align-items:center; justify-content:center;
+    position:absolute; bottom:-.3rem; right:-.3rem;
+    width:1.6rem; height:1.6rem; border-radius:50%;
+    background:#fff; color:var(--accent); font-weight:900; font-size:.9rem;
+  }
+  .swatch.selected .swatch-check{ display:flex; }
+  .create-row{ display:flex; gap:1rem; }
+  .danger-btn{ background:transparent; border:2px solid var(--danger); color:var(--danger); }
+  .danger-btn:focus{ background:rgba(255,90,95,.15); }
+  .danger-btn.armed{ background:var(--danger); color:#fff; }
+  .create-row .tile{ width:fit-content; }
 
-  /* Buttons */
-  .btn{ padding:.8rem 1.1rem; border-radius:.35rem; font-weight:800; display:inline-flex; align-items:center; gap:.7rem; }
-  .btn-play{ background:var(--text); color:#000; }
-  .btn-info{ background:rgba(255,255,255,0.12); color:var(--text); border:1px solid rgba(255,255,255,0.06); }
+  /* ---------- Generic tiles / buttons ---------- */
+  .tile{
+    padding:1rem 2rem; border-radius:.7rem; font-weight:700; font-size:1.05rem;
+  }
+  .primary-btn{ background:var(--accent); color:#062033; }
+  .primary-btn:focus{ background:var(--accent-2); }
+  .secondary-btn{ background:var(--surface); color:var(--text); border:1px solid #2c3444; }
 
-  /* Home / Netflix-like layout */
+  /* ---------- Auth screens ---------- */
+  .auth-content{
+    display:flex; flex-direction:column; align-items:flex-start; gap:1.2rem;
+    margin-top:1.5rem; max-width:26rem;
+  }
+  .auth-actions{ display:flex; flex-direction:column; gap:1rem; margin-top:.6rem; width:100%; }
+  .auth-actions .tile{ text-align:center; }
+
+  .field-row{ display:flex; flex-direction:column; gap:1rem; margin-bottom:1.8rem; }
+  .field-box{
+    background:var(--surface); border-radius:1rem; padding:.9rem 1.4rem;
+    min-width:22rem; max-width:32rem;
+    border:2px solid #2c3444;
+    display:flex; flex-direction:column; gap:.15rem;
+  }
+  .field-box.active{ border-color:var(--accent); }
+  .field-label{ font-size:.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+  .field-value-row{ display:flex; align-items:center; min-height:1.5rem; }
+  .field-value{ font-family:'Baloo 2', sans-serif; font-weight:600; font-size:1.35rem; }
+  .field-box .cursor{ display:none; }
+  .field-box.active .cursor{ display:inline-block; }
+
+  .auth-switch{ margin-top:.4rem; }
+  .auth-switch .tile{ background:transparent; border:none; color:var(--accent); padding:.4rem 0; }
+
+  /* ---------- Home / Library ---------- */
   #screen-home{ flex-direction:row; gap:0; }
-  .home-sidebar{ width:72px; background:transparent; display:flex; flex-direction:column; align-items:center; gap:1.2rem; padding-top:1.8rem; flex-shrink:0; }
-  .sidebar-icon{ width:40px; height:40px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); }
-  .sidebar-icon:focus, .sidebar-icon:hover{ color:var(--text); }
-  .home-main{ flex:1; display:flex; flex-direction:column; overflow:auto; padding-left:1.2rem; }
+  .home-sidebar{
+    display:flex; flex-direction:column; align-items:center;
+    gap:1.1rem; padding:.5rem .4rem; width:4rem; flex-shrink:0;
+  }
+  .sidebar-icon{
+    width:2.9rem; height:2.9rem; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface); color:var(--text-muted); font-size:1.2rem;
+    font-family:'Baloo 2', sans-serif; font-weight:700;
+  }
+  .sidebar-icon:focus{ color:var(--text); }
+  .sidebar-spacer{ flex:1; }
 
-  .hero{ position:relative; min-height:60vh; border-radius:8px; overflow:hidden; margin-bottom:1.6rem; background-color:#000; background-size:cover; background-position:center; box-shadow:0 20px 60px rgba(0,0,0,.6); }
-  .hero::before{ content:''; position:absolute; inset:0; background:linear-gradient(90deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.25) 35%, transparent 60%); }
-  .hero-content{ position:relative; padding:4rem 3rem; max-width:56rem; z-index:2; }
-  .hero .screen-title{ font-size:3.2rem; margin:0 0 .6rem; }
-  .hero-desc{ color:var(--text-muted); max-width:46rem; font-size:1.05rem; margin-bottom:1rem; }
+  .home-main{ flex:1; display:flex; flex-direction:column; overflow-y:auto; padding-left:1.8rem; min-width:0; }
+
+  .category-pills{ display:flex; gap:.7rem; margin-bottom:1.5rem; flex-shrink:0; }
+  .pill{
+    padding:.55rem 1.2rem; border-radius:999px; background:var(--surface); color:var(--text-muted);
+    font-weight:700; font-size:.9rem;
+  }
+  .pill.active-pill{ background:var(--accent); color:#062033; }
+  .pill:focus{ color:var(--text); }
+
+  .hero{
+    position:relative; border-radius:1.1rem; overflow:hidden;
+    min-height:14rem; margin-bottom:2rem; padding:1.8rem;
+    display:flex; flex-direction:column; justify-content:flex-end;
+    background-size:cover; background-position:center;
+    background-color:var(--surface); flex-shrink:0;
+  }
+  .hero::before{
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(0deg, rgba(9,11,16,.95) 15%, rgba(9,11,16,.35) 65%, transparent 100%);
+  }
+  .hero-content{ position:relative; max-width:34rem; }
+  .hero-meta{ display:flex; gap:.6rem; align-items:center; color:var(--text-muted); font-size:.9rem; margin:.4rem 0 .6rem; font-weight:600; }
+  .hero-badge{ background:var(--surface); padding:.15rem .5rem; border-radius:.3rem; font-size:.8rem; }
+  .hero-desc{
+    color:var(--text-muted); font-size:.95rem; line-height:1.5; margin-bottom:1.1rem; max-width:32rem;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
   .hero-actions{ display:flex; gap:1rem; }
 
-  .rows { display:flex; flex-direction:column; gap:1.4rem; padding-bottom:3rem; }
-  .content-row{ padding-left:6px; }
-  .row-title{ font-family:'Baloo 2', sans-serif; font-weight:800; font-size:1.05rem; margin-bottom:.6rem; }
-  .row-scroll{ display:flex; gap:.9rem; overflow-x:auto; padding-bottom:.6rem; }
-  .content-card{ flex:0 0 11.5rem; height:17rem; border-radius:6px; background:var(--surface); background-size:cover; background-position:center; box-shadow:0 6px 20px rgba(0,0,0,.6); }
-  .content-card:focus{ transform:translateY(-8px); }
+  .content-row{ margin-bottom:2rem; flex-shrink:0; }
+  .row-title{ font-family:'Baloo 2', sans-serif; font-weight:700; font-size:1.25rem; margin-bottom:.8rem; }
+  .row-scroll{ display:flex; gap:1rem; overflow-x:auto; padding-bottom:.5rem; }
+  .content-card{ flex-shrink:0; width:9rem; display:flex; flex-direction:column; gap:.5rem; }
+  .card-poster{
+    width:9rem; height:13.4rem; border-radius:.55rem; background:var(--surface);
+    background-size:cover; background-position:center;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:2rem; color:var(--text-muted);
+  }
+  .card-title{ font-size:.85rem; font-weight:600; color:var(--text-muted); }
+  .content-card:focus .card-title{ color:var(--text); }
+  .card-live-badge{
+    position:absolute; top:.5rem; left:.5rem;
+    background:var(--danger); color:#fff; font-size:.62rem; font-weight:800;
+    padding:.15rem .4rem; border-radius:.25rem; letter-spacing:.03em;
+  }
+  .search-grid{ display:flex; flex-wrap:wrap; gap:1.1rem; margin-top:1.5rem; }
 
-  /* Player */
+  /* ---------- Episodes ---------- */
+  .season-pills{ display:flex; gap:.7rem; margin-bottom:1.2rem; flex-wrap:wrap; }
+  .episode-list{ display:flex; flex-direction:column; gap:.7rem; }
+  .episode-row{ display:flex; align-items:center; gap:1rem; background:var(--surface); border-radius:.7rem; padding:.9rem 1.2rem; }
+  .episode-num{ width:1.8rem; text-align:center; color:var(--text-muted); font-weight:700; }
+  .episode-title{ font-weight:600; }
+  .episode-row:focus .episode-title{ color:var(--accent-2); }
+
+  /* ---------- Player ---------- */
   #screen-player{ inset:0; padding:0; background:#000; align-items:stretch; }
-  .player-video{ width:100%; height:100%; object-fit:cover; background:#000; }
-  .player-overlay{ position:absolute; left:0; right:0; bottom:0; padding:2rem var(--safe-x); background:linear-gradient(0deg, rgba(0,0,0,.85), transparent); }
+  .player-video{ width:100%; height:100%; object-fit:contain; background:#000; }
+  .player-overlay{
+    position:absolute; left:0; right:0; bottom:0; padding:2rem var(--safe-x);
+    background:linear-gradient(0deg, rgba(0,0,0,.85), transparent);
+    transition:opacity .3s ease; opacity:1;
+  }
+  .player-overlay.hidden{ opacity:0; }
+  .player-title{ font-family:'Baloo 2', sans-serif; font-weight:700; font-size:1.5rem; color:#fff; }
+  .player-hint{ color:#aab2c0; font-size:.9rem; margin-top:.3rem; }
 
-  /* Settings */
-  .lang-list{ display:flex; flex-direction:column; gap:.8rem; margin-bottom:1.2rem; }
-  .lang-row{ background:var(--surface); border-radius:8px; padding:.8rem 1rem; width:fit-content; color:var(--text); }
+  /* ---------- Admin ---------- */
+  .admin-list{ display:flex; flex-direction:column; gap:.6rem; margin-bottom:1.6rem; max-width:40rem; }
+  .admin-row{ display:flex; align-items:center; justify-content:space-between; background:var(--surface); border-radius:.6rem; padding:.7rem 1rem; }
+  .admin-row-type{ color:var(--text-muted); font-size:.75rem; text-transform:uppercase; margin-left:.6rem; letter-spacing:.03em; }
+  .admin-row-actions{ display:flex; gap:.5rem; }
+  .admin-btn-sm{
+    background:var(--bg-0); border:1px solid #2c3444; color:var(--text-muted);
+    padding:.35rem .8rem; border-radius:.4rem; font-size:.8rem; font-weight:700; cursor:pointer;
+    font-family:inherit;
+  }
+  .admin-btn-sm.danger{ border-color:var(--danger); color:var(--danger); }
+  .admin-btn{
+    background:var(--accent); color:#062033; border:none; padding:.7rem 1.4rem;
+    border-radius:.6rem; font-weight:700; cursor:pointer; font-size:.95rem; font-family:inherit;
+    margin-bottom:1.4rem;
+  }
+  .admin-btn.secondary{ background:var(--surface); color:var(--text); border:1px solid #2c3444; }
+  .admin-form{ display:flex; flex-direction:column; gap:1rem; max-width:36rem; }
+  .admin-field label{
+    display:block; font-size:.8rem; font-weight:700; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:.04em; margin-bottom:.4rem;
+  }
+  .admin-field input, .admin-field textarea, .admin-field select{
+    width:100%; background:var(--surface); border:2px solid #2c3444; border-radius:.6rem;
+    padding:.7rem 1rem; color:var(--text); font-family:inherit; font-size:1rem;
+  }
+  .admin-field input:focus, .admin-field textarea:focus, .admin-field select:focus{ outline:none; border-color:var(--accent); }
+  .admin-type-row{ display:flex; gap:.8rem; }
+  .admin-checkbox-label{ display:flex; align-items:center; gap:.5rem; text-transform:none; font-size:.95rem; color:var(--text); }
+  .admin-checkbox-label input{ width:auto; }
+  .season-block{ background:var(--surface); border-radius:.7rem; padding:1rem; margin-bottom:1rem; }
+  .season-block-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:.8rem; }
+  .episode-field-row{ display:flex; gap:.6rem; margin-bottom:.6rem; align-items:center; }
+  .episode-field-row input{ flex:1; background:var(--bg-0); border:1px solid #2c3444; border-radius:.4rem; padding:.5rem .7rem; color:var(--text); font-family:inherit; }
 
-  /* Misc */
-  .admin-btn{ background:var(--accent); color:#fff; border-radius:6px; padding:.6rem 1rem; }
-
-  @media (max-height:700px){ .hero{ min-height:48vh; } }
+  /* ---------- Settings screen ---------- */
+  .lang-list{ display:flex; flex-direction:column; gap:.8rem; margin-bottom:2rem; }
+  .lang-row{
+    display:flex; align-items:center; gap:1rem;
+    background:var(--surface); border-radius:.7rem;
+    padding:.9rem 1.4rem; width:fit-content; min-width:16rem;
+  }
+  .lang-ring{
+    width:1.3rem; height:1.3rem; border-radius:50%;
+    border:2px solid var(--text-muted);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .lang-ring::after{
+    content:''; width:.6rem; height:.6rem; border-radius:50%;
+    background:var(--accent); transform:scale(0); transition:transform .15s ease;
+  }
+  .lang-row.selected .lang-ring{ border-color:var(--accent); }
+  .lang-row.selected .lang-ring::after{ transform:scale(1); }
+  .lang-label{ font-weight:600; font-size:1.05rem; color:var(--text-muted); }
+  .lang-row.selected .lang-label{ color:var(--text); }
 </style>
 </head>
 <body>
 
 <div class="app">
   <div class="topbar">
-    <div class="brand">zumo<span class="o-dot"></span></div>
+    <div class="brand">zum<span class="o-dot"></span></div>
     <div class="remote-hint">
-      <span class="chip" id="hintMoveText">d-pad to move</span>
-      <span class="chip" id="hintSelectText">select to choose</span>
-      <span class="chip" id="hintBackText">back to return</span>
+      <span class="chip"><span class="glyph">&#10018;</span><span id="hintMoveText">d-pad to move</span></span>
+      <span class="chip"><span class="glyph">&#9675;</span><span id="hintSelectText">select to choose</span></span>
+      <span class="chip"><span class="glyph">&#8617;</span><span id="hintBackText">back to return</span></span>
     </div>
   </div>
 
   <main>
-    <section class="screen" id="screen-auth" data-screen="auth">
+    <section class="screen active" id="screen-auth" data-screen="auth">
       <div class="auth-content">
         <h1 class="screen-title" id="authTitle">Welcome to zumo</h1>
         <p class="screen-sub" id="authSub">Log in or create an account to get started.</p>
@@ -213,8 +486,9 @@
     </section>
 
     <section class="screen" id="screen-color" data-screen="color">
-      <h1 class="screen-title" id="colorTitle">Choose an avatar color</h1>
+      <h1 class="screen-title" id="colorTitle">Choose a profile picture</h1>
       <p class="screen-sub" id="colorSub"></p>
+      <div class="category-pills" id="avatarCategoryPills"></div>
       <div class="swatch-row" id="swatchRow"></div>
       <p class="auth-error" id="colorError"></p>
       <div class="create-row">
@@ -223,39 +497,31 @@
       </div>
     </section>
 
-    <section class="screen active" id="screen-home" data-screen="home">
+    <section class="screen" id="screen-home" data-screen="home">
       <div class="home-sidebar">
-        <div class="sidebar-icon focusable" id="navProfile" tabindex="0" title="Switch Profile" aria-label="profile"></div>
-        <div class="sidebar-icon focusable" id="navHome" tabindex="0" title="Home" aria-label="home">
-          <!-- home svg -->
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11.5L12 4l9 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 21V12h14v9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="sidebar-icon focusable" id="navSearch" tabindex="0" title="Search" aria-label="search">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="5.2" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </div>
-        <div class="sidebar-icon focusable" id="navLiveTv" tabindex="0" title="Live TV" aria-label="live">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="12" rx="1.2" stroke="currentColor" stroke-width="1.6"/><path d="M8 3l4 3 4-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
+        <div class="sidebar-icon focusable" id="navProfile" tabindex="0" title="Switch Profile"></div>
+        <div class="sidebar-icon focusable" id="navSearch" tabindex="0" title="Search">&#128269;</div>
+        <div class="sidebar-icon focusable" id="navLiveTv" tabindex="0" title="Live TV">&#128225;</div>
+        <div class="sidebar-icon focusable" id="navAdmin" tabindex="0" title="Admin" style="display:none;">&#128736;</div>
         <div class="sidebar-spacer"></div>
-        <div class="sidebar-icon focusable" id="navSettings" tabindex="0" title="Settings" aria-label="settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z" stroke="currentColor" stroke-width="1.4"/><path d="M19.4 15a1.7 1.7 0 0 0 .1 1.2l.2.4a1.2 1.2 0 0 1-.2 1.4l-1.2 1.2a1.2 1.2 0 0 1-1.4.2l-.4-.2a1.7 1.7 0 0 0-1.2.1l-.5.3a1.2 1.2 0 0 1-1.5-.2l-1-1.6a1.2 1.2 0 0 1-.2-1.5l.3-.5a1.7 1.7 0 0 0 .1-1.2l-.1-.5a1.2 1.2 0 0 1 .2-1.1l1-1.4a1.2 1.2 0 0 1 1.5-.2l.5.3a1.7 1.7 0 0 0 1.2.1l.4-.1a1.2 1.2 0 0 1 1.4.2l1.2 1.2a1.2 1.2 0 0 1 .2 1.4l-.2.4z" stroke="currentColor" stroke-width="1.2"/></svg>
-        </div>
+        <div class="sidebar-icon focusable" id="navSettings" tabindex="0" title="Settings">&#9881;</div>
       </div>
-
       <div class="home-main">
+        <div class="category-pills" id="categoryPills">
+          <div class="pill focusable active-pill" data-cat="all" tabindex="0">All</div>
+          <div class="pill focusable" data-cat="movie" tabindex="0">Movies</div>
+          <div class="pill focusable" data-cat="show" tabindex="0">TV Shows</div>
+          <div class="pill focusable" data-cat="channel" tabindex="0">Live TV</div>
+        </div>
         <div class="hero" id="hero">
           <div class="hero-content">
             <h1 class="screen-title" id="heroTitle">Welcome to zumo</h1>
             <div class="hero-meta" id="heroMeta"></div>
-            <p class="hero-desc" id="heroDesc">Browse your library and pick something to watch.</p>
-            <div class="hero-actions" id="heroActions">
-              <button class="btn btn-play focusable" id="heroPlayBtn" tabindex="0">Play</button>
-              <button class="btn btn-info focusable" id="heroInfoBtn" tabindex="0">More info</button>
-            </div>
+            <p class="hero-desc" id="heroDesc">Add movies, shows, and live channels from the Admin panel to fill your library.</p>
+            <div class="hero-actions" id="heroActions"></div>
           </div>
         </div>
-
-        <div class="rows" id="contentRows"></div>
+        <div id="contentRows"></div>
       </div>
     </section>
 
@@ -282,7 +548,7 @@
       <video class="player-video" id="playerVideo" autoplay></video>
       <div class="player-overlay" id="playerOverlay">
         <div class="player-title" id="playerTitle"></div>
-        <div class="player-hint">Select to play/pause · Back to exit</div>
+        <div class="player-hint">Select to play/pause &middot; Back to exit</div>
       </div>
     </section>
 
@@ -311,8 +577,8 @@
           <div class="admin-field" style="flex:1;"><label for="admFieldRating">Rating</label><input type="text" id="admFieldRating" placeholder="TV-MA"></div>
         </div>
         <div class="admin-field"><label for="admFieldGenres">Genres (comma-separated)</label><input type="text" id="admFieldGenres" placeholder="Comedy, Drama"></div>
-        <div class="admin-field"><label for="admFieldPoster">Poster URL — portrait, 2:3 (e.g. 500×750)</label><input type="text" id="admFieldPoster" placeholder="https://..."></div>
-        <div class="admin-field"><label for="admFieldBackdrop">Backdrop URL — landscape, 16:9 (e.g. 1600×900)</label><input type="text" id="admFieldBackdrop" placeholder="https://..."></div>
+        <div class="admin-field"><label for="admFieldPoster">Poster URL — portrait, 2:3 (e.g. 500&times;750)</label><input type="text" id="admFieldPoster" placeholder="https://..."></div>
+        <div class="admin-field"><label for="admFieldBackdrop">Backdrop URL — landscape, 16:9 (e.g. 1600&times;900)</label><input type="text" id="admFieldBackdrop" placeholder="https://..."></div>
         <div class="admin-field" id="admVideoUrlField">
           <label for="admFieldVideoUrl">Video URL (mp4/webm for movies, .m3u8 for channels)</label>
           <input type="text" id="admFieldVideoUrl" placeholder="https://...">
@@ -335,9 +601,9 @@
 
     <section class="screen" id="screen-settings" data-screen="settings">
       <h1 class="screen-title" id="settingsTitle">Settings</h1>
-      <p class="screen-sub">Languages</p>
+      <p class="screen-sub" id="settingsSub">Choose your language.</p>
       <div class="lang-list" id="langList"></div>
-      <div style="margin-top:1rem; display:flex; gap:1rem;">
+      <div class="create-row">
         <div class="tile primary-btn focusable" id="settingsDoneBtn" tabindex="0">Done</div>
         <div class="tile secondary-btn focusable" id="logOutBtn" tabindex="0">Log Out</div>
       </div>
@@ -346,10 +612,16 @@
 </div>
 
 <script type="module">
-  // Firebase imports
+  // ---------- Firebase ----------
+  // SDK version per https://firebase.google.com/docs/web/setup — bump if it goes stale.
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js';
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js';
-  import { getFirestore, doc, setDoc, collection, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js';
+  import {
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, onAuthStateChanged
+  } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js';
+  import {
+    getFirestore, doc, setDoc, collection, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp
+  } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyAVr3BwP4a-euZqUhWDsvLAamCAnDgnH_8",
@@ -380,11 +652,22 @@
   let overlayTimer = null;
   let searchQuery = '';
 
-  // Only keep color choices for avatars
   const AVATAR_CATEGORIES = [
     { id:'colors', label:'Colors', options:[
-      { bg:'#e50914' }, { bg:'#2f6fed' }, { bg:'#2fae66' }, { bg:'#a855f7' },
-      { bg:'#f59e0b' }, { bg:'#14b8a6' }, { bg:'#6b6b6b' }, { bg:'#eab308' }
+      { bg:'#e3402c' }, { bg:'#2f6fed' }, { bg:'#2fae66' }, { bg:'#a855f7' },
+      { bg:'#f59e0b' }, { bg:'#14b8a6' }, { bg:'#ec4899' }, { bg:'#eab308' }
+    ]},
+    { id:'animals', label:'Animals', options:[
+      { icon:'🐶', bg:'#e3402c' }, { icon:'🐱', bg:'#2f6fed' }, { icon:'🦊', bg:'#f59e0b' }, { icon:'🐼', bg:'#334155' },
+      { icon:'🦁', bg:'#eab308' }, { icon:'🐵', bg:'#a855f7' }, { icon:'🐰', bg:'#ec4899' }, { icon:'🐨', bg:'#14b8a6' }
+    ]},
+    { id:'space', label:'Space', options:[
+      { icon:'🚀', bg:'#2f6fed' }, { icon:'🌟', bg:'#f59e0b' }, { icon:'🪐', bg:'#a855f7' }, { icon:'🌙', bg:'#334155' },
+      { icon:'👽', bg:'#2fae66' }, { icon:'☄️', bg:'#e3402c' }
+    ]},
+    { id:'fun', label:'Fun', options:[
+      { icon:'🎮', bg:'#a855f7' }, { icon:'🎨', bg:'#ec4899' }, { icon:'⚽', bg:'#2fae66' }, { icon:'🎵', bg:'#2f6fed' },
+      { icon:'🍕', bg:'#f59e0b' }, { icon:'🌈', bg:'#e3402c' }
     ]}
   ];
   let activeAvatarCategory = 'colors';
@@ -392,7 +675,7 @@
   let deleteArmed = false;
 
   let profiles = [];
-  let creating = { name:'', color:null };
+  let creating = { name:'', color:null, icon:null };
   let currentProfileIndex = null;
 
   let loginForm = { email:'', password:'', active:'email' };
@@ -402,136 +685,1295 @@
   let language = 'English';
   let settingsReturnScreen = 'profiles';
 
-  const LANG_CODES = { 'English':'en', 'Español':'es', 'Français':'fr', 'Deutsch':'de', 'Português':'pt', '日本語':'ja' };
+  const LANG_CODES = {
+    'English':'en', 'Español':'es', 'Français':'fr',
+    'Deutsch':'de', 'Português':'pt', '日本語':'ja'
+  };
 
-  const translations = { /* unchanged translations omitted for brevity in this commit; reuse existing mapping */ };
+  const translations = {
+    English: {
+      hintMove:'d-pad to move', hintSelect:'select to choose', hintBack:'back to return',
+      authTitle:'Welcome to zumo', authSub:'Log in or create an account to get started.',
+      logIn:'Log In', createAccount:'Create Account',
+      loginSub2:'Enter your email and password.',
+      emailLabel:'Email', passwordLabel:'Password',
+      needAccount:'Need an account? Create one', haveAccount:'Already have an account? Log in',
+      profilesTitle:"Who's watching?", profilesSub:'Select a profile, or add a new one.',
+      addProfile:'Add Profile', settingsLabel:'Settings',
+      nameTitle:"What's your name?", nameSub:'Use the d-pad to move, and select to choose a letter.',
+      space:'Space', delete:'Delete', next:'Next',
+      colorTitle:'Choose a profile picture', colorSub:name=>`Pick a color for ${name}'s avatar.`,
+      createProfile:'Create Profile',
+      homeSub:"This is a placeholder for your Fire TV app's main content.",
+      switchProfiles:'Switch Profiles', welcome:name=>`Welcome, ${name}`,
+      settingsTitle:'Settings', settingsSub:'Choose your language.', done:'Done', logOut:'Log Out',
+      manageProfiles:'Manage Profiles', doneEditing:'Done Editing',
+      confirmDelete:name=>`Delete ${name}?`, profileCount:n=>`${n} of ${MAX_PROFILES} profiles`
+    },
+    'Español': {
+      hintMove:'d-pad para moverte', hintSelect:'selecciona para elegir', hintBack:'atrás para volver',
+      authTitle:'Bienvenido a zumo', authSub:'Inicia sesión o crea una cuenta para comenzar.',
+      logIn:'Iniciar sesión', createAccount:'Crear cuenta',
+      loginSub2:'Ingresa tu correo y contraseña.',
+      emailLabel:'Correo', passwordLabel:'Contraseña',
+      needAccount:'¿No tienes cuenta? Crea una', haveAccount:'¿Ya tienes cuenta? Inicia sesión',
+      profilesTitle:'¿Quién está viendo?', profilesSub:'Selecciona un perfil o añade uno nuevo.',
+      addProfile:'Añadir perfil', settingsLabel:'Ajustes',
+      nameTitle:'¿Cuál es tu nombre?', nameSub:'Usa el d-pad para moverte y selecciona para elegir una letra.',
+      space:'Espacio', delete:'Borrar', next:'Siguiente',
+      colorTitle:'Elige una foto de perfil', colorSub:name=>`Elige un color para el avatar de ${name}.`,
+      createProfile:'Crear perfil',
+      homeSub:'Este es un espacio reservado para el contenido principal de tu app de Fire TV.',
+      switchProfiles:'Cambiar de perfil', welcome:name=>`Bienvenido, ${name}`,
+      settingsTitle:'Ajustes', settingsSub:'Elige tu idioma.', done:'Listo', logOut:'Cerrar sesión',
+      manageProfiles:'Administrar perfiles', doneEditing:'Listo',
+      confirmDelete:name=>`¿Eliminar a ${name}?`, profileCount:n=>`${n} de ${MAX_PROFILES} perfiles`
+    },
+    'Français': {
+      hintMove:'croix directionnelle pour se déplacer', hintSelect:'sélection pour choisir', hintBack:'retour pour revenir',
+      authTitle:'Bienvenue sur zumo', authSub:'Connectez-vous ou créez un compte pour commencer.',
+      logIn:'Se connecter', createAccount:'Créer un compte',
+      loginSub2:'Entrez votre e-mail et votre mot de passe.',
+      emailLabel:'E-mail', passwordLabel:'Mot de passe',
+      needAccount:'Pas de compte ? Créez-en un', haveAccount:'Déjà un compte ? Connectez-vous',
+      profilesTitle:'Qui regarde ?', profilesSub:'Sélectionnez un profil ou ajoutez-en un nouveau.',
+      addProfile:'Ajouter un profil', settingsLabel:'Paramètres',
+      nameTitle:'Quel est votre nom ?', nameSub:'Utilisez la croix directionnelle pour vous déplacer et sélectionnez pour choisir une lettre.',
+      space:'Espace', delete:'Supprimer', next:'Suivant',
+      colorTitle:'Choisissez une photo de profil', colorSub:name=>`Choisissez une couleur pour l'avatar de ${name}.`,
+      createProfile:'Créer le profil',
+      homeSub:'Ceci est un espace réservé pour le contenu principal de votre application Fire TV.',
+      switchProfiles:'Changer de profil', welcome:name=>`Bienvenue, ${name}`,
+      settingsTitle:'Paramètres', settingsSub:'Choisissez votre langue.', done:'Terminé', logOut:'Se déconnecter',
+      manageProfiles:'Gérer les profils', doneEditing:'Terminé',
+      confirmDelete:name=>`Supprimer ${name} ?`, profileCount:n=>`${n} sur ${MAX_PROFILES} profils`
+    },
+    Deutsch: {
+      hintMove:'Steuerkreuz zum Bewegen', hintSelect:'Auswahl zum Bestätigen', hintBack:'Zurück zum Verlassen',
+      authTitle:'Willkommen bei zumo', authSub:'Melde dich an oder erstelle ein Konto, um loszulegen.',
+      logIn:'Anmelden', createAccount:'Konto erstellen',
+      loginSub2:'Gib deine E-Mail-Adresse und dein Passwort ein.',
+      emailLabel:'E-Mail', passwordLabel:'Passwort',
+      needAccount:'Noch kein Konto? Jetzt erstellen', haveAccount:'Schon ein Konto? Anmelden',
+      profilesTitle:'Wer schaut zu?', profilesSub:'Wähle ein Profil aus oder füge ein neues hinzu.',
+      addProfile:'Profil hinzufügen', settingsLabel:'Einstellungen',
+      nameTitle:'Wie heißt du?', nameSub:'Bewege dich mit dem Steuerkreuz und wähle einen Buchstaben aus.',
+      space:'Leerzeichen', delete:'Löschen', next:'Weiter',
+      colorTitle:'Profilbild auswählen', colorSub:name=>`Wähle eine Farbe für ${name}s Avatar.`,
+      createProfile:'Profil erstellen',
+      homeSub:'Dies ist ein Platzhalter für den Hauptinhalt deiner Fire TV App.',
+      switchProfiles:'Profil wechseln', welcome:name=>`Willkommen, ${name}`,
+      settingsTitle:'Einstellungen', settingsSub:'Wähle deine Sprache.', done:'Fertig', logOut:'Abmelden',
+      manageProfiles:'Profile verwalten', doneEditing:'Fertig',
+      confirmDelete:name=>`${name} löschen?`, profileCount:n=>`${n} von ${MAX_PROFILES} Profilen`
+    },
+    'Português': {
+      hintMove:'direcional para mover', hintSelect:'selecionar para escolher', hintBack:'voltar para retornar',
+      authTitle:'Bem-vindo ao zumo', authSub:'Faça login ou crie uma conta para começar.',
+      logIn:'Entrar', createAccount:'Criar conta',
+      loginSub2:'Digite seu e-mail e senha.',
+      emailLabel:'E-mail', passwordLabel:'Senha',
+      needAccount:'Não tem conta? Crie uma', haveAccount:'Já tem conta? Entrar',
+      profilesTitle:'Quem está assistindo?', profilesSub:'Selecione um perfil ou adicione um novo.',
+      addProfile:'Adicionar perfil', settingsLabel:'Configurações',
+      nameTitle:'Qual é o seu nome?', nameSub:'Use o direcional para mover e selecione para escolher uma letra.',
+      space:'Espaço', delete:'Apagar', next:'Próximo',
+      colorTitle:'Escolha uma foto de perfil', colorSub:name=>`Escolha uma cor para o avatar de ${name}.`,
+      createProfile:'Criar perfil',
+      homeSub:'Este é um espaço reservado para o conteúdo principal do seu app Fire TV.',
+      switchProfiles:'Trocar de perfil', welcome:name=>`Bem-vindo, ${name}`,
+      settingsTitle:'Configurações', settingsSub:'Escolha seu idioma.', done:'Concluído', logOut:'Sair',
+      manageProfiles:'Gerenciar perfis', doneEditing:'Concluído',
+      confirmDelete:name=>`Excluir ${name}?`, profileCount:n=>`${n} de ${MAX_PROFILES} perfis`
+    },
+    '日本語': {
+      hintMove:'十字キーで移動', hintSelect:'決定で選択', hintBack:'戻るで戻る',
+      authTitle:'zumoへようこそ', authSub:'ログインするか、アカウントを作成してください。',
+      logIn:'ログイン', createAccount:'アカウントを作成',
+      loginSub2:'メールアドレスとパスワードを入力してください。',
+      emailLabel:'メールアドレス', passwordLabel:'パスワード',
+      needAccount:'アカウントをお持ちでない方はこちら', haveAccount:'すでにアカウントをお持ちの方はこちら',
+      profilesTitle:'誰が見ますか?', profilesSub:'プロフィールを選ぶか、新しく追加してください。',
+      addProfile:'プロフィールを追加', settingsLabel:'設定',
+      nameTitle:'お名前は?', nameSub:'十字キーで移動し、決定ボタンで文字を選んでください。',
+      space:'スペース', delete:'削除', next:'次へ',
+      colorTitle:'プロフィール画像を選ぶ', colorSub:name=>`${name}のアバターの色を選んでください。`,
+      createProfile:'プロフィールを作成',
+      homeSub:'ここにFire TVアプリのメインコンテンツが表示されます。',
+      switchProfiles:'プロフィールを切り替える', welcome:name=>`ようこそ、${name}さん`,
+      settingsTitle:'設定', settingsSub:'言語を選んでください。', done:'完了', logOut:'ログアウト',
+      manageProfiles:'プロフィールを管理', doneEditing:'完了',
+      confirmDelete:name=>`${name}を削除しますか?`, profileCount:n=>`${MAX_PROFILES}件中${n}件のプロフィール`
+    }
+  };
 
-  // Screen management
+  // ---------- Screen management ----------
   function showScreen(name, focusEl){
-    document.querySelectorAll('.screen').forEach(s=> s.classList.toggle('active', s.dataset.screen === name));
+    document.querySelectorAll('.screen').forEach(s=>{
+      s.classList.toggle('active', s.dataset.screen === name);
+    });
     requestAnimationFrame(()=>{
-      if(focusEl){ try{ focusEl.focus(); }catch(e){} }
-      else{ const first = document.querySelector('.screen.active .focusable'); if(first) first.focus(); }
+      if(focusEl){ focusEl.focus(); }
+      else{
+        const first = document.querySelector('.screen.active .focusable');
+        if(first) first.focus();
+      }
     });
   }
 
   function goBack(){
     const active = document.querySelector('.screen.active').dataset.screen;
-    if(active === 'login' || active === 'create'){ showScreen('auth'); }
-    else if(active === 'name'){ creating = { name:'', color:null }; editingProfileId = null; showScreen('profiles'); }
-    else if(active === 'color'){ showScreen('name'); updateNameText(); }
-    else if(active === 'home'){ showScreen('profiles'); }
-    else if(active === 'settings'){ showScreen(settingsReturnScreen); }
-    else if(active === 'profiles' && editMode){ editMode = false; renderProfiles(false); }
-    else if(active === 'search'){ showScreen('home'); }
-    else if(active === 'episodes'){ currentShow = null; showScreen('home'); }
-    else if(active === 'player'){ stopPlayback(); showScreen(currentShow ? 'episodes' : 'home'); }
-    else if(active === 'admin'){ showScreen('home'); }
-    else if(active === 'adminForm'){ showScreen('admin'); }
+    if(active === 'login' || active === 'create'){
+      showScreen('auth');
+    } else if(active === 'name'){
+      creating = { name:'', color:null, icon:null };
+      editingProfileId = null;
+      showScreen('profiles');
+    } else if(active === 'color'){
+      showScreen('name');
+      updateNameText();
+    } else if(active === 'home'){
+      showScreen('profiles');
+    } else if(active === 'settings'){
+      showScreen(settingsReturnScreen);
+    } else if(active === 'profiles' && editMode){
+      editMode = false;
+      renderProfiles(false);
+    } else if(active === 'search'){
+      showScreen('home');
+    } else if(active === 'episodes'){
+      currentShow = null;
+      showScreen('home');
+    } else if(active === 'player'){
+      stopPlayback();
+      showScreen(currentShow ? 'episodes' : 'home');
+    } else if(active === 'admin'){
+      showScreen('home');
+    } else if(active === 'adminForm'){
+      showScreen('admin');
+    }
   }
 
-  // Load profiles
-  async function loadProfiles(uid){ profiles = []; try{ const snap = await getDocs(collection(db, 'users', uid, 'profiles')); snap.forEach(d=>{ const data = d.data(); profiles.push({ id: d.id, name: data.name, color: data.color, recentlyWatched: data.recentlyWatched || [] }); }); }catch(err){ console.error('Failed to load profiles:', err); } editMode = false; }
+  // ---------- Firestore profile loading ----------
+  async function loadProfiles(uid){
+    profiles = [];
+    try{
+      const snap = await getDocs(collection(db, 'users', uid, 'profiles'));
+      snap.forEach(d=>{
+        const data = d.data();
+        profiles.push({ id: d.id, name: data.name, color: data.color, icon: data.icon || null, recentlyWatched: data.recentlyWatched || [] });
+      });
+    }catch(err){
+      console.error('Failed to load profiles:', err);
+    }
+    editMode = false;
+  }
 
-  // Render profiles (no emojis, colors only)
-  function renderProfiles(focusLast){ const grid = document.getElementById('profileGrid'); grid.innerHTML = '';
-    profiles.forEach((p)=>{ const tile = document.createElement('div'); tile.className = 'profile-tile focusable' + (editMode ? ' edit-mode' : ''); tile.tabIndex = 0; tile.innerHTML = `
+  // ---------- Profiles screen ----------
+  function renderProfiles(focusLast){
+    const grid = document.getElementById('profileGrid');
+    grid.innerHTML = '';
+
+    profiles.forEach((p)=>{
+      const tile = document.createElement('div');
+      tile.className = 'profile-tile focusable' + (editMode ? ' edit-mode' : '');
+      tile.tabIndex = 0;
+      tile.innerHTML = `
         <div class="avatar-wrap">
-          <div class="avatar" style="background:${p.color || '#333'}">${escapeHtml((p.name||'').charAt(0).toUpperCase())}</div>
-          <span class="edit-badge">✎</span>
+          <div class="avatar" style="background:${p.color}">${p.icon ? p.icon : p.name.charAt(0).toUpperCase()}</div>
+          <span class="edit-badge">&#9998;</span>
         </div>
         <div class="profile-name">${escapeHtml(p.name)}</div>`;
-      tile.addEventListener('click', ()=> editMode ? openEditProfile(p) : selectProfile(p)); grid.appendChild(tile);
+      tile.addEventListener('click', ()=> editMode ? openEditProfile(p) : selectProfile(p));
+      grid.appendChild(tile);
     });
 
-    if(!editMode && profiles.length < MAX_PROFILES){ const addTile = document.createElement('div'); addTile.className = 'profile-tile focusable'; addTile.tabIndex = 0; addTile.innerHTML = `
+    if(!editMode && profiles.length < MAX_PROFILES){
+      const addTile = document.createElement('div');
+      addTile.className = 'profile-tile focusable';
+      addTile.tabIndex = 0;
+      addTile.innerHTML = `
         <div class="avatar add-avatar"></div>
-        <div class="profile-name" id="addProfileLabel">Add Profile</div>`; addTile.addEventListener('click', startCreateProfile); grid.appendChild(addTile); }
+        <div class="profile-name" id="addProfileLabel">Add Profile</div>`;
+      addTile.addEventListener('click', startCreateProfile);
+      grid.appendChild(addTile);
+    }
 
-    if(profiles.length > 0){ const manageTile = document.createElement('div'); manageTile.className = 'profile-tile focusable'; manageTile.tabIndex = 0; manageTile.innerHTML = `
+    if(profiles.length > 0){
+      const manageTile = document.createElement('div');
+      manageTile.className = 'profile-tile focusable';
+      manageTile.tabIndex = 0;
+      manageTile.innerHTML = `
         <div class="avatar manage-avatar"></div>
-        <div class="profile-name" id="manageProfileLabel">Manage Profiles</div>`; manageTile.addEventListener('click', ()=>{ editMode = !editMode; renderProfiles(false); }); grid.appendChild(manageTile); }
+        <div class="profile-name" id="manageProfileLabel">Manage Profiles</div>`;
+      manageTile.addEventListener('click', ()=>{
+        editMode = !editMode;
+        renderProfiles(false);
+      });
+      grid.appendChild(manageTile);
+    }
 
-    if(!editMode){ const settingsTile = document.createElement('div'); settingsTile.className = 'profile-tile focusable'; settingsTile.tabIndex = 0; settingsTile.innerHTML = `
+    if(!editMode){
+      const settingsTile = document.createElement('div');
+      settingsTile.className = 'profile-tile focusable';
+      settingsTile.tabIndex = 0;
+      settingsTile.innerHTML = `
         <div class="avatar settings-avatar"></div>
-        <div class="profile-name" id="settingsProfileLabel">Settings</div>`; settingsTile.addEventListener('click', ()=> openSettings('profiles')); grid.appendChild(settingsTile); }
+        <div class="profile-name" id="settingsProfileLabel">Settings</div>`;
+      settingsTile.addEventListener('click', ()=> openSettings('profiles'));
+      grid.appendChild(settingsTile);
+    }
 
-    applyLanguage(); showScreen('profiles', focusLast ? grid.children[Math.max(0, profiles.length-1)] : null);
+    applyLanguage();
+    showScreen('profiles', focusLast ? grid.children[Math.max(0, profiles.length-1)] : null);
   }
 
-  function openEditProfile(p){ editingProfileId = p.id; creating = { name: p.name, color: p.color }; showScreen('name'); updateNameText(); }
+  function openEditProfile(p){
+    editingProfileId = p.id;
+    creating = { name: p.name, color: p.color, icon: p.icon || null };
+    showScreen('name');
+    updateNameText();
+  }
 
-  async function loadContent(){ contentList = []; try{ const snap = await getDocs(collection(db, 'content')); snap.forEach(d => contentList.push({ id: d.id, ...d.data() })); }catch(err){ console.error('Failed to load content:', err); } }
+  // ---------- Shared content library ----------
+  async function loadContent(){
+    contentList = [];
+    try{
+      const snap = await getDocs(collection(db, 'content'));
+      snap.forEach(d => contentList.push({ id: d.id, ...d.data() }));
+    }catch(err){
+      console.error('Failed to load content:', err);
+    }
+  }
 
-  function escapeAttr(str){ return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
-  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escapeAttr(str){
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  }
 
-  // Render home hero and rows Netflix-inspired
-  function renderHome(){ const p = profiles[currentProfileIndex]; const navProfile = document.getElementById('navProfile'); navProfile.style.background = p ? p.color : 'transparent'; navProfile.textContent = p ? (p.name||'').charAt(0).toUpperCase() : ''; document.getElementById('navAdmin') && (document.getElementById('navAdmin').style.display = isAdmin ? 'flex' : 'none'); renderHero(); renderRows(); }
+  function firestoreErrorMessage(err){
+    const map = {
+      'permission-denied': "You don't have permission to do that — make sure your Firestore security rules are deployed and up to date.",
+      'unavailable': 'Network error — check your connection and try again.',
+      'not-found': 'That item could not be found.',
+      'unauthenticated': 'You need to be logged in to do that.'
+    };
+    return map[err.code] || `Something went wrong (${err.code || err.message || 'unknown error'}). Please try again.`;
+  }
 
-  function renderHero(){ const featuredList = contentList.filter(c=>c.featured); const item = featuredList[0] || contentList[0]; const hero = document.getElementById('hero'); if(!item){ hero.style.backgroundImage = ''; document.getElementById('heroTitle').textContent = 'Welcome to zumo'; document.getElementById('heroMeta').innerHTML = ''; document.getElementById('heroDesc').textContent = 'Browse your library and pick something to watch.'; document.getElementById('heroActions').innerHTML = ''; return; }
+  // ---------- Home / library screen ----------
+  function renderHome(){
+    const p = profiles[currentProfileIndex];
+    const navProfile = document.getElementById('navProfile');
+    navProfile.style.background = p ? p.color : 'var(--surface)';
+    navProfile.textContent = p ? (p.icon || p.name.charAt(0).toUpperCase()) : '';
+    document.getElementById('navAdmin').style.display = isAdmin ? 'flex' : 'none';
+    renderHero();
+    renderRows();
+  }
+
+  function renderHero(){
+    const featuredList = contentList.filter(c => c.featured);
+    const item = featuredList[0] || contentList[0];
+    const hero = document.getElementById('hero');
+    if(!item){
+      hero.style.backgroundImage = '';
+      document.getElementById('heroTitle').textContent = 'Welcome to zumo';
+      document.getElementById('heroMeta').innerHTML = '';
+      document.getElementById('heroDesc').textContent = isAdmin
+        ? 'Add movies, shows, and live channels from the Admin panel to fill your library.'
+        : 'No content yet. Ask your admin to add some!';
+      document.getElementById('heroActions').innerHTML = '';
+      return;
+    }
     hero.style.backgroundImage = item.backdropUrl ? `url('${item.backdropUrl}')` : '';
     document.getElementById('heroTitle').textContent = item.title || 'Untitled';
-    const metaBits = []; if(item.year) metaBits.push(escapeHtml(String(item.year))); if(item.type==='show') metaBits.push(`${(item.seasons||[]).length} Season${(item.seasons||[]).length===1?'':'s'}`); if(item.type==='channel') metaBits.push('LIVE'); let metaHtml = metaBits.map(b=>`<span>${b}</span>`).join('<span>&middot;</span>'); if(item.rating) metaHtml += `<span class="hero-badge">${escapeHtml(item.rating)}</span>`; document.getElementById('heroMeta').innerHTML = metaHtml; document.getElementById('heroDesc').textContent = item.description || '';
-    // hero actions
-    const heroActions = document.getElementById('heroActions'); heroActions.innerHTML = '';
-    const playBtn = document.createElement('button'); playBtn.className = 'btn btn-play focusable'; playBtn.textContent = 'Play'; playBtn.tabIndex = 0; playBtn.addEventListener('click', ()=> playFromHero(item));
-    const infoBtn = document.createElement('button'); infoBtn.className = 'btn btn-info focusable'; infoBtn.textContent = 'More info'; infoBtn.tabIndex = 0; infoBtn.addEventListener('click', ()=> openInfo(item));
-    heroActions.appendChild(playBtn); heroActions.appendChild(infoBtn);
+
+    const metaBits = [];
+    if(item.year) metaBits.push(escapeHtml(String(item.year)));
+    if(item.type === 'show') metaBits.push(`${(item.seasons||[]).length} Season${(item.seasons||[]).length===1?'':'s'}`);
+    if(item.type === 'channel') metaBits.push('LIVE');
+    let metaHtml = metaBits.map(b=>`<span>${b}</span>`).join('<span>&middot;</span>');
+    if(item.rating) metaHtml += `<span class="hero-badge">${escapeHtml(item.rating)}</span>`;
+    document.getElementById('heroMeta').innerHTML = metaHtml;
+    document.getElementById('heroDesc').textContent = item.description || '';
+
+    const heroActions = document.getElementById('heroActions');
+    heroActions.innerHTML = '';
+    const playBtn = document.createElement('div');
+    playBtn.className = 'tile primary-btn focusable';
+    playBtn.tabIndex = 0;
+    playBtn.textContent = item.type === 'show' ? 'View Episodes' : '▶ Play';
+    playBtn.addEventListener('click', ()=> openContent(item));
+    heroActions.appendChild(playBtn);
   }
 
-  function renderRows(){ const rows = document.getElementById('contentRows'); rows.innerHTML = '';
-    // Create a Featured row then Trending and categories
-    const featured = contentList.filter(c=>c.featured);
-    if(featured.length){ rows.appendChild(makeRow('Featured', featured)); }
-    const trending = contentList.slice(0,12);
-    if(trending.length){ rows.appendChild(makeRow('Trending Now', trending)); }
-    const movies = contentList.filter(c=>c.type==='movie'); if(movies.length) rows.appendChild(makeRow('Movies', movies));
-    const shows = contentList.filter(c=>c.type==='show'); if(shows.length) rows.appendChild(makeRow('TV Shows', shows));
+  function renderRows(){
+    const container = document.getElementById('contentRows');
+    container.innerHTML = '';
+
+    function buildRow(title, items){
+      if(items.length === 0) return;
+      const rowWrap = document.createElement('div');
+      rowWrap.className = 'content-row';
+      const h = document.createElement('div');
+      h.className = 'row-title';
+      h.textContent = title;
+      rowWrap.appendChild(h);
+      const scroll = document.createElement('div');
+      scroll.className = 'row-scroll';
+      items.forEach(item => scroll.appendChild(buildCard(item)));
+      rowWrap.appendChild(scroll);
+      container.appendChild(rowWrap);
+    }
+
+    if(contentList.length === 0){
+      const empty = document.createElement('p');
+      empty.className = 'screen-sub';
+      empty.textContent = isAdmin ? 'No content yet — use the Admin panel to add some.' : 'No content yet. Ask your admin to add some!';
+      container.appendChild(empty);
+      return;
+    }
+
+    if(activeCategory === 'all'){
+      buildRow('Featured', contentList.filter(c=>c.featured));
+      buildRow('Movies', contentList.filter(c=>c.type==='movie'));
+      buildRow('TV Shows', contentList.filter(c=>c.type==='show'));
+      buildRow('Live TV', contentList.filter(c=>c.type==='channel'));
+    } else {
+      const label = activeCategory==='movie' ? 'Movies' : activeCategory==='show' ? 'TV Shows' : 'Live TV';
+      buildRow(label, contentList.filter(c=>c.type===activeCategory));
+    }
   }
 
-  function makeRow(title, items){ const row = document.createElement('div'); row.className = 'content-row'; const t = document.createElement('div'); t.className = 'row-title'; t.textContent = title; row.appendChild(t); const scroll = document.createElement('div'); scroll.className = 'row-scroll'; items.forEach(it=>{ const card = document.createElement('div'); card.className = 'content-card focusable'; card.tabIndex = 0; card.style.backgroundImage = it.posterUrl ? `url('${it.posterUrl}')` : ''; card.addEventListener('click', ()=> openContent(it)); scroll.appendChild(card); }); row.appendChild(scroll); return row; }
+  function buildCard(item){
+    const card = document.createElement('div');
+    card.className = 'content-card focusable';
+    card.tabIndex = 0;
+    const poster = document.createElement('div');
+    poster.className = 'card-poster';
+    if(item.posterUrl){ poster.style.backgroundImage = `url('${item.posterUrl}')`; }
+    else{ poster.textContent = (item.title || '?').charAt(0).toUpperCase(); }
+    card.appendChild(poster);
+    if(item.type === 'channel'){
+      const badge = document.createElement('span');
+      badge.className = 'card-live-badge';
+      badge.textContent = 'LIVE';
+      card.appendChild(badge);
+    }
+    const title = document.createElement('div');
+    title.className = 'card-title';
+    title.textContent = item.title || 'Untitled';
+    card.appendChild(title);
+    card.addEventListener('click', ()=> openContent(item));
+    return card;
+  }
 
-  // Player helper (HLS + native fallback)
-  async function playVideoUrl(url, title){ stopPlayback(); const video = document.getElementById('playerVideo'); document.getElementById('playerTitle').textContent = title || ''; if(!url) return; if(url.match(/\.mp4(\?|$)/i) || url.match(/\.webm(\?|$)/i)){ video.src = url; showScreen('player'); try{ await video.play(); }catch(e){} return; }
-    if(url.match(/\.m3u8(\?|$)/i)){
-      if(window.Hls && Hls.isSupported()){
-        if(hlsInstance){ try{ hlsInstance.destroy(); }catch(e){} }
-        hlsInstance = new Hls(); hlsInstance.attachMedia(video); hlsInstance.on(Hls.Events.MEDIA_ATTACHED, ()=>{ hlsInstance.loadSource(url); video.play().catch(()=>{}); }); showScreen('player'); return;
+  function openContent(item){
+    if(item.type === 'show'){ openEpisodes(item); }
+    else{ playContent(item.title, item.videoUrl); }
+  }
+
+  // ---------- Episodes screen ----------
+  function openEpisodes(show){
+    currentShow = show;
+    currentSeasonIndex = 0;
+    document.getElementById('episodesTitle').textContent = show.title || 'Untitled';
+    document.getElementById('episodesDesc').textContent = show.description || '';
+    renderSeasonPills();
+    renderEpisodeList();
+    showScreen('episodes');
+  }
+
+  function renderSeasonPills(){
+    const wrap = document.getElementById('seasonPills');
+    wrap.innerHTML = '';
+    (currentShow.seasons || []).forEach((season, i)=>{
+      const pill = document.createElement('div');
+      pill.className = 'pill focusable' + (i === currentSeasonIndex ? ' active-pill' : '');
+      pill.tabIndex = 0;
+      pill.textContent = `Season ${season.seasonNumber || (i+1)}`;
+      pill.addEventListener('click', ()=>{
+        currentSeasonIndex = i;
+        renderSeasonPills();
+        renderEpisodeList();
+      });
+      wrap.appendChild(pill);
+    });
+  }
+
+  function renderEpisodeList(){
+    const list = document.getElementById('episodeList');
+    list.innerHTML = '';
+    const season = (currentShow.seasons || [])[currentSeasonIndex];
+    if(!season) return;
+    (season.episodes || []).forEach((ep, i)=>{
+      const row = document.createElement('div');
+      row.className = 'episode-row focusable';
+      row.tabIndex = 0;
+      row.innerHTML = `<span class="episode-num">${i+1}</span><span class="episode-title">${escapeHtml(ep.title || ('Episode ' + (i+1)))}</span>`;
+      row.addEventListener('click', ()=>{
+        playContent(`${currentShow.title} — ${ep.title || ('Episode ' + (i+1))}`, ep.videoUrl);
+      });
+      list.appendChild(row);
+    });
+  }
+
+  // ---------- Player ----------
+  function playContent(title, url){
+    if(!url) return;
+    stopPlayback();
+    document.getElementById('playerTitle').textContent = title;
+    const video = document.getElementById('playerVideo');
+    if(url.includes('.m3u8') && window.Hls && Hls.isSupported()){
+      hlsInstance = new Hls();
+      hlsInstance.loadSource(url);
+      hlsInstance.attachMedia(video);
+    } else if(url.includes('.m3u8') && video.canPlayType('application/vnd.apple.mpegurl')){
+      video.src = url;
+    } else {
+      video.src = url;
+    }
+    showScreen('player');
+    video.play().catch(()=>{});
+    showOverlay();
+  }
+
+  function stopPlayback(){
+    const video = document.getElementById('playerVideo');
+    if(hlsInstance){ hlsInstance.destroy(); hlsInstance = null; }
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    if(overlayTimer){ clearTimeout(overlayTimer); overlayTimer = null; }
+  }
+
+  function showOverlay(){
+    const overlay = document.getElementById('playerOverlay');
+    overlay.classList.remove('hidden');
+    if(overlayTimer) clearTimeout(overlayTimer);
+    overlayTimer = setTimeout(()=> overlay.classList.add('hidden'), 4000);
+  }
+
+  function togglePlayPause(){
+    const video = document.getElementById('playerVideo');
+    if(video.paused){ video.play().catch(()=>{}); } else { video.pause(); }
+    showOverlay();
+  }
+
+  // ---------- Search ----------
+  function buildSearchKeyboard(){
+    const kb = document.getElementById('searchKeyboard');
+    const rows = ['1234567890', 'QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+    rows.forEach(rowStr=>{
+      const row = document.createElement('div');
+      row.className = 'kb-row';
+      [...rowStr].forEach(ch=>{
+        const key = document.createElement('div');
+        key.className = 'key focusable';
+        key.tabIndex = 0;
+        key.textContent = ch;
+        key.addEventListener('click', ()=>{ searchQuery += ch; refreshSearch(); });
+        row.appendChild(key);
+      });
+      kb.appendChild(row);
+    });
+    const actionRow = document.createElement('div');
+    actionRow.className = 'kb-row';
+    const spaceKey = document.createElement('div');
+    spaceKey.className = 'key-action key-wide focusable';
+    spaceKey.tabIndex = 0;
+    spaceKey.textContent = 'Space';
+    spaceKey.addEventListener('click', ()=>{ searchQuery += ' '; refreshSearch(); });
+    const delKey = document.createElement('div');
+    delKey.className = 'key-action focusable';
+    delKey.tabIndex = 0;
+    delKey.textContent = '⌫ Delete';
+    delKey.addEventListener('click', ()=>{ searchQuery = searchQuery.slice(0, -1); refreshSearch(); });
+    actionRow.appendChild(spaceKey);
+    actionRow.appendChild(delKey);
+    kb.appendChild(actionRow);
+  }
+
+  function refreshSearch(){
+    document.getElementById('searchValue').textContent = searchQuery;
+    const results = document.getElementById('searchResults');
+    results.innerHTML = '';
+    const q = searchQuery.trim().toLowerCase();
+    if(!q) return;
+    contentList.filter(c => (c.title||'').toLowerCase().includes(q)).forEach(item=>{
+      results.appendChild(buildCard(item));
+    });
+  }
+
+  // ---------- Admin ----------
+  function renderAdminList(){
+    const list = document.getElementById('adminList');
+    list.innerHTML = '';
+    if(contentList.length === 0){
+      const empty = document.createElement('p');
+      empty.className = 'screen-sub';
+      empty.textContent = 'No content yet — add your first title.';
+      list.appendChild(empty);
+      return;
+    }
+    contentList.forEach(item=>{
+      const row = document.createElement('div');
+      row.className = 'admin-row';
+      row.innerHTML = `
+        <div><strong>${escapeHtml(item.title||'Untitled')}</strong><span class="admin-row-type">${escapeHtml(item.type||'')}</span></div>
+        <div class="admin-row-actions">
+          <button type="button" class="admin-btn-sm" data-action="edit">Edit</button>
+          <button type="button" class="admin-btn-sm danger" data-action="delete">Delete</button>
+        </div>`;
+      row.querySelector('[data-action="edit"]').addEventListener('click', ()=> openAdminForm(item));
+      row.querySelector('[data-action="delete"]').addEventListener('click', async ()=>{
+        if(!confirm(`Delete "${item.title}"? This can't be undone.`)) return;
+        try{
+          await deleteDoc(doc(db, 'content', item.id));
+          contentList = contentList.filter(c => c.id !== item.id);
+          renderAdminList();
+        }catch(err){
+          console.error(err);
+          alert(firestoreErrorMessage(err));
+        }
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function updateAdminFormType(){
+    const type = document.getElementById('admFieldType').value;
+    document.getElementById('admVideoUrlField').style.display = type === 'show' ? 'none' : 'block';
+    document.getElementById('admSeasonsField').style.display = type === 'show' ? 'block' : 'none';
+  }
+
+  function renumberSeasons(){
+    seasonsBuilder.forEach((s,i)=> s.seasonNumber = i+1);
+  }
+
+  function renderSeasonsBuilder(){
+    const wrap = document.getElementById('seasonsContainer');
+    wrap.innerHTML = '';
+    seasonsBuilder.forEach((season, sIdx)=>{
+      const block = document.createElement('div');
+      block.className = 'season-block';
+      block.innerHTML = `
+        <div class="season-block-header">
+          <strong>Season ${season.seasonNumber}</strong>
+          <button type="button" class="admin-btn-sm danger" data-remove-season>Remove Season</button>
+        </div>
+        <div class="episodes-editor" data-episodes></div>
+        <button type="button" class="admin-btn-sm" data-add-episode>+ Add Episode</button>`;
+      block.querySelector('[data-remove-season]').addEventListener('click', ()=>{
+        seasonsBuilder.splice(sIdx, 1);
+        renumberSeasons();
+        renderSeasonsBuilder();
+      });
+      const epContainer = block.querySelector('[data-episodes]');
+      (season.episodes || []).forEach((ep, eIdx)=>{
+        const row = document.createElement('div');
+        row.className = 'episode-field-row';
+        row.innerHTML = `
+          <input type="text" placeholder="Episode title" value="${escapeAttr(ep.title||'')}" data-ep-title>
+          <input type="text" placeholder="Video URL" value="${escapeAttr(ep.videoUrl||'')}" data-ep-url>
+          <button type="button" class="admin-btn-sm danger" data-remove-ep>&#10005;</button>`;
+        row.querySelector('[data-ep-title]').addEventListener('input', e=>{ ep.title = e.target.value; });
+        row.querySelector('[data-ep-url]').addEventListener('input', e=>{ ep.videoUrl = e.target.value; });
+        row.querySelector('[data-remove-ep]').addEventListener('click', ()=>{
+          season.episodes.splice(eIdx, 1);
+          renderSeasonsBuilder();
+        });
+        epContainer.appendChild(row);
+      });
+      block.querySelector('[data-add-episode]').addEventListener('click', ()=>{
+        season.episodes = season.episodes || [];
+        season.episodes.push({ title:'', videoUrl:'' });
+        renderSeasonsBuilder();
+      });
+      wrap.appendChild(block);
+    });
+  }
+
+  function openAdminForm(item){
+    editingContentId = item ? item.id : null;
+    document.getElementById('adminFormTitle').textContent = item ? 'Edit Content' : 'Add Content';
+    document.getElementById('admFieldType').value = item ? item.type : 'movie';
+    document.getElementById('admFieldTitle').value = item ? (item.title||'') : '';
+    document.getElementById('admFieldDescription').value = item ? (item.description||'') : '';
+    document.getElementById('admFieldYear').value = item ? (item.year||'') : '';
+    document.getElementById('admFieldRating').value = item ? (item.rating||'') : '';
+    document.getElementById('admFieldGenres').value = item && item.genres ? item.genres.join(', ') : '';
+    document.getElementById('admFieldPoster').value = item ? (item.posterUrl||'') : '';
+    document.getElementById('admFieldBackdrop').value = item ? (item.backdropUrl||'') : '';
+    document.getElementById('admFieldVideoUrl').value = item ? (item.videoUrl||'') : '';
+    document.getElementById('admFieldFeatured').checked = item ? !!item.featured : false;
+    seasonsBuilder = item && item.seasons ? JSON.parse(JSON.stringify(item.seasons)) : [];
+    document.getElementById('adminFormError').textContent = '';
+    updateAdminFormType();
+    renderSeasonsBuilder();
+    showScreen('adminForm');
+  }
+
+  function selectProfile(p){
+    currentProfileIndex = profiles.findIndex(pr => pr.id === p.id);
+    renderHome();
+    showScreen('home');
+  }
+
+  // ---------- Name screen ----------
+  function startCreateProfile(){
+    editingProfileId = null;
+    creating = { name:'', color:null, icon:null };
+    activeAvatarCategory = 'colors';
+    showScreen('name');
+    updateNameText();
+  }
+
+  function updateNameText(){
+    document.getElementById('nameText').textContent = creating.name;
+  }
+
+  function buildKeyboard(){
+    const kb = document.getElementById('keyboard');
+    const rows = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+    rows.forEach(rowStr=>{
+      const row = document.createElement('div');
+      row.className = 'kb-row';
+      [...rowStr].forEach(ch=>{
+        const key = document.createElement('div');
+        key.className = 'key focusable';
+        key.tabIndex = 0;
+        key.textContent = ch;
+        key.addEventListener('click', ()=> typeChar(ch));
+        row.appendChild(key);
+      });
+      kb.appendChild(row);
+    });
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'kb-row';
+
+    const spaceKey = document.createElement('div');
+    spaceKey.className = 'key-action key-wide focusable';
+    spaceKey.id = 'kbSpace';
+    spaceKey.tabIndex = 0;
+    spaceKey.textContent = 'Space';
+    spaceKey.addEventListener('click', ()=> typeChar(' '));
+
+    const delKey = document.createElement('div');
+    delKey.className = 'key-action focusable';
+    delKey.id = 'kbDelete';
+    delKey.tabIndex = 0;
+    delKey.textContent = '⌫ Delete';
+    delKey.addEventListener('click', deleteChar);
+
+    const nextKey = document.createElement('div');
+    nextKey.className = 'key-action key-next focusable';
+    nextKey.id = 'kbNext';
+    nextKey.tabIndex = 0;
+    nextKey.textContent = 'Next →';
+    nextKey.addEventListener('click', goToColorScreen);
+
+    actionRow.appendChild(spaceKey);
+    actionRow.appendChild(delKey);
+    actionRow.appendChild(nextKey);
+    kb.appendChild(actionRow);
+  }
+
+  function typeChar(ch){
+    if(creating.name.length >= 20) return;
+    creating.name += ch;
+    updateNameText();
+  }
+  function deleteChar(){
+    creating.name = creating.name.slice(0, -1);
+    updateNameText();
+  }
+  function goToColorScreen(){
+    if(creating.name.trim().length === 0){
+      shakeEl(document.querySelector('.name-display'));
+      return;
+    }
+    document.getElementById('colorSub').textContent = translations[language].colorSub(creating.name);
+    document.getElementById('createBtn').textContent = editingProfileId ? 'Save Changes' : translations[language].createProfile;
+    deleteArmed = false;
+    clearColorError();
+    renderDeleteProfileBtn();
+    // If editing, jump to whichever category the current picture lives in so it's visible right away.
+    if(editingProfileId){
+      const match = AVATAR_CATEGORIES.find(cat => cat.options.some(o =>
+        o.bg === creating.color && (o.icon || null) === (creating.icon || null)
+      ));
+      activeAvatarCategory = match ? match.id : 'colors';
+    }
+    buildAvatarCategoryPills();
+    renderSwatchGrid();
+    showScreen('color');
+  }
+
+  // ---------- Color / avatar picker screen ----------
+  function buildAvatarCategoryPills(){
+    const wrap = document.getElementById('avatarCategoryPills');
+    wrap.innerHTML = '';
+    AVATAR_CATEGORIES.forEach(cat=>{
+      const pill = document.createElement('div');
+      pill.className = 'pill focusable' + (cat.id === activeAvatarCategory ? ' active-pill' : '');
+      pill.tabIndex = 0;
+      pill.dataset.cat = cat.id;
+      pill.textContent = cat.label;
+      pill.addEventListener('click', ()=>{
+        activeAvatarCategory = cat.id;
+        wrap.querySelectorAll('.pill').forEach(p=>p.classList.remove('active-pill'));
+        pill.classList.add('active-pill');
+        renderSwatchGrid();
+      });
+      wrap.appendChild(pill);
+    });
+  }
+
+  function renderSwatchGrid(){
+    const row = document.getElementById('swatchRow');
+    row.innerHTML = '';
+    const cat = AVATAR_CATEGORIES.find(c => c.id === activeAvatarCategory) || AVATAR_CATEGORIES[0];
+    cat.options.forEach(opt=>{
+      const sw = document.createElement('div');
+      sw.className = 'swatch focusable';
+      sw.tabIndex = 0;
+      sw.style.background = opt.bg;
+      sw.innerHTML = (opt.icon ? `<span class="swatch-icon-emoji">${opt.icon}</span>` : '') + `<span class="swatch-check">&#10003;</span>`;
+      const isSelected = creating.color === opt.bg && (creating.icon || null) === (opt.icon || null);
+      if(isSelected) sw.classList.add('selected');
+      sw.addEventListener('click', ()=>{
+        creating.color = opt.bg;
+        creating.icon = opt.icon || null;
+        row.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+        sw.classList.add('selected');
+        clearColorError();
+      });
+      row.appendChild(sw);
+    });
+  }
+
+  function showColorError(msg){ document.getElementById('colorError').textContent = msg; }
+  function clearColorError(){ document.getElementById('colorError').textContent = ''; }
+
+  function renderDeleteProfileBtn(){
+    const btn = document.getElementById('deleteProfileBtn');
+    if(!editingProfileId){ btn.style.display = 'none'; return; }
+    btn.style.display = 'flex';
+    btn.classList.toggle('armed', deleteArmed);
+    btn.textContent = deleteArmed ? 'Select again to confirm' : 'Delete Profile';
+  }
+
+  document.getElementById('createBtn').addEventListener('click', async ()=>{
+    if(!creating.color){
+      shakeEl(document.getElementById('swatchRow'));
+      showColorError('Pick a profile picture to continue.');
+      return;
+    }
+    if(!currentUser){
+      showColorError('You need to be logged in to do that.');
+      return;
+    }
+    if(!editingProfileId && profiles.length >= MAX_PROFILES){
+      shakeEl(document.getElementById('profileGrid'));
+      showScreen('profiles');
+      return;
+    }
+    clearColorError();
+    try{
+      if(editingProfileId){
+        const updates = { name: creating.name.trim(), color: creating.color, icon: creating.icon || null };
+        await updateDoc(doc(db, 'users', currentUser.uid, 'profiles', editingProfileId), updates);
+        const idx = profiles.findIndex(p => p.id === editingProfileId);
+        if(idx > -1) profiles[idx] = { ...profiles[idx], ...updates };
+        editingProfileId = null;
+      } else {
+        const profileData = {
+          name: creating.name.trim(),
+          color: creating.color,
+          icon: creating.icon || null,
+          recentlyWatched: [],
+          createdAt: serverTimestamp()
+        };
+        const ref = await addDoc(collection(db, 'users', currentUser.uid, 'profiles'), profileData);
+        profiles.push({ id: ref.id, name: profileData.name, color: profileData.color, icon: profileData.icon, recentlyWatched: [] });
       }
-      if(window.android && typeof window.android.playHls === 'function'){ window.android.playHls(url); return; }
-      // last resort
-      video.src = url; showScreen('player'); try{ await video.play(); }catch(e){ document.getElementById('playerTitle').textContent = 'Playback not supported here — open in native player.'; }
-    } else { video.src = url; showScreen('player'); try{ await video.play(); }catch(e){} }
-  }
-
-  function stopPlayback(){ const video = document.getElementById('playerVideo'); try{ video.pause(); video.removeAttribute('src'); video.load(); }catch(e){} if(hlsInstance){ try{ hlsInstance.destroy(); }catch(e){} hlsInstance = null; } }
-
-  // Simple content actions
-  function playFromHero(item){ if(item.videoUrl) playVideoUrl(item.videoUrl, item.title); else alert('No video URL set.'); }
-  function openInfo(item){ currentShow = item; showScreen('episodes'); // reuse episodes to show info, or implement details screen
-  }
-  function openContent(it){ if(it.type==='show'){ currentShow = it; showScreen('episodes'); } else { playVideoUrl(it.videoUrl, it.title); } }
-
-  // Avatar swatches render
-  function renderSwatches(){ const row = document.getElementById('swatchRow'); row.innerHTML = ''; const colors = AVATAR_CATEGORIES[0].options; colors.forEach(c=>{ const s = document.createElement('div'); s.className = 'swatch focusable'; s.tabIndex = 0; s.style.background = c.bg; s.addEventListener('click', ()=>{ creating.color = c.bg; document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('selected')); s.classList.add('selected'); }); row.appendChild(s); }); }
-
-  // Settings / languages
-  function renderLanguages(){ const list = document.getElementById('langList'); list.innerHTML = ''; LANGUAGES.forEach(l=>{ const r = document.createElement('div'); r.className = 'lang-row focusable'; r.tabIndex = 0; r.textContent = l; r.addEventListener('click', ()=>{ language = l; applyLanguage(); }); list.appendChild(r); }); }
-
-  function applyLanguage(){ // minimal: update hints and labels
-    const t = translations[language] || translations['English']; try{ document.getElementById('hintMoveText').textContent = t.hintMove || 'd-pad to move'; document.getElementById('hintSelectText').textContent = t.hintSelect || 'select to choose'; document.getElementById('hintBackText').textContent = t.hintBack || 'back to return'; document.getElementById('profilesTitle') && (document.getElementById('profilesTitle').textContent = t.profilesTitle || "Who's watching?"); }catch(e){}
-  }
-
-  // Initialize UI
-  document.addEventListener('DOMContentLoaded', ()=>{
-    renderSwatches(); renderLanguages(); applyLanguage(); loadContent().then(()=>{ renderHome(); });
+      creating = { name:'', color:null, icon:null };
+      deleteArmed = false;
+      renderProfiles(true);
+    }catch(err){
+      console.error(err);
+      showColorError(firestoreErrorMessage(err));
+      shakeEl(document.getElementById('swatchRow'));
+    }
   });
 
-  // expose some functions to global scope for inline handlers
-  window.playVideoUrl = playVideoUrl;
-  window.showScreen = showScreen;
+  document.getElementById('deleteProfileBtn').addEventListener('click', async ()=>{
+    if(!editingProfileId) return;
+    if(!deleteArmed){
+      deleteArmed = true;
+      renderDeleteProfileBtn();
+      return;
+    }
+    clearColorError();
+    try{
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'profiles', editingProfileId));
+      profiles = profiles.filter(p => p.id !== editingProfileId);
+      editingProfileId = null;
+      deleteArmed = false;
+      creating = { name:'', color:null, icon:null };
+      renderProfiles(false);
+    }catch(err){
+      console.error(err);
+      showColorError(firestoreErrorMessage(err));
+    }
+  });
 
+  // ---------- Settings screen ----------
+  function openSettings(fromScreen){
+    settingsReturnScreen = fromScreen;
+    showScreen('settings');
+  }
+
+  function buildSettings(){
+    const list = document.getElementById('langList');
+    LANGUAGES.forEach(lang=>{
+      const row = document.createElement('div');
+      row.className = 'lang-row focusable' + (lang === language ? ' selected' : '');
+      row.tabIndex = 0;
+      row.dataset.lang = lang;
+      row.innerHTML = `<span class="lang-ring"></span><span class="lang-label">${lang}</span>`;
+      row.addEventListener('click', ()=>{
+        language = lang;
+        document.querySelectorAll('.lang-row').forEach(r=>{
+          r.classList.toggle('selected', r.dataset.lang === lang);
+        });
+        applyLanguage();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function applyLanguage(){
+    const t = translations[language];
+
+    const hintMove = document.getElementById('hintMoveText'); if(hintMove) hintMove.textContent = t.hintMove;
+    const hintSelect = document.getElementById('hintSelectText'); if(hintSelect) hintSelect.textContent = t.hintSelect;
+    const hintBack = document.getElementById('hintBackText'); if(hintBack) hintBack.textContent = t.hintBack;
+
+    document.getElementById('authTitle').textContent = t.authTitle;
+    document.getElementById('authSub').textContent = t.authSub;
+    document.getElementById('goLoginBtn').textContent = t.logIn;
+    document.getElementById('goCreateBtn').textContent = t.createAccount;
+
+    document.getElementById('loginTitle').textContent = t.logIn;
+    document.getElementById('loginSub').textContent = t.loginSub2;
+    document.getElementById('loginEmailLabel').textContent = t.emailLabel;
+    document.getElementById('loginPasswordLabel').textContent = t.passwordLabel;
+    document.getElementById('loginSubmitBtn').textContent = t.logIn;
+    document.getElementById('loginToCreateBtn').textContent = t.needAccount;
+
+    document.getElementById('createTitle').textContent = t.createAccount;
+    document.getElementById('createSub').textContent = t.loginSub2;
+    document.getElementById('createEmailLabel').textContent = t.emailLabel;
+    document.getElementById('createPasswordLabel').textContent = t.passwordLabel;
+    document.getElementById('createSubmitBtn').textContent = t.createAccount;
+    document.getElementById('createToLoginBtn').textContent = t.haveAccount;
+
+    document.getElementById('profilesTitle').textContent = t.profilesTitle;
+    document.getElementById('profilesSub').textContent = t.profilesSub;
+    const profileCount = document.getElementById('profileCount');
+    if(profileCount) profileCount.textContent = t.profileCount(profiles.length);
+    const addLabel = document.getElementById('addProfileLabel'); if(addLabel) addLabel.textContent = t.addProfile;
+    const settingsProfileLabel = document.getElementById('settingsProfileLabel'); if(settingsProfileLabel) settingsProfileLabel.textContent = t.settingsLabel;
+    const manageLabel = document.getElementById('manageProfileLabel'); if(manageLabel) manageLabel.textContent = editMode ? t.doneEditing : t.manageProfiles;
+
+    document.getElementById('nameTitle').textContent = t.nameTitle;
+    document.getElementById('nameSub').textContent = t.nameSub;
+    const kbSpace = document.getElementById('kbSpace'); if(kbSpace) kbSpace.textContent = t.space;
+    const kbDelete = document.getElementById('kbDelete'); if(kbDelete) kbDelete.textContent = '⌫ ' + t.delete;
+    const kbNext = document.getElementById('kbNext'); if(kbNext) kbNext.textContent = t.next + ' →';
+
+    document.getElementById('colorTitle').textContent = t.colorTitle;
+    document.getElementById('colorSub').textContent = t.colorSub(creating.name || '');
+    document.getElementById('createBtn').textContent = editingProfileId ? 'Save Changes' : t.createProfile;
+
+    document.getElementById('settingsTitle').textContent = t.settingsTitle;
+    document.getElementById('settingsSub').textContent = t.settingsSub;
+    document.getElementById('settingsDoneBtn').textContent = t.done;
+    document.getElementById('logOutBtn').textContent = t.logOut;
+
+    document.documentElement.lang = LANG_CODES[language] || 'en';
+  }
+
+  document.getElementById('settingsDoneBtn').addEventListener('click', ()=>{
+    showScreen(settingsReturnScreen);
+  });
+
+  function shakeEl(el){
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ---------- Auth screens ----------
+  function typeAuthChar(form, ch){
+    if(form[form.active].length >= 40) return;
+    form[form.active] += ch;
+  }
+  function deleteAuthChar(form){
+    form[form.active] = form[form.active].slice(0, -1);
+  }
+
+  function refreshAuthForm(prefix, form){
+    document.getElementById(prefix+'EmailValue').textContent = form.email;
+    document.getElementById(prefix+'PasswordValue').textContent = '•'.repeat(form.password.length);
+    document.getElementById(prefix+'EmailField').classList.toggle('active', form.active === 'email');
+    document.getElementById(prefix+'PasswordField').classList.toggle('active', form.active === 'password');
+  }
+
+  function buildAuthKeyboard(containerId, form, prefix){
+    const kb = document.getElementById(containerId);
+    const rows = ['1234567890', 'QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+    rows.forEach(rowStr=>{
+      const row = document.createElement('div');
+      row.className = 'kb-row';
+      [...rowStr].forEach(ch=>{
+        const key = document.createElement('div');
+        key.className = 'key focusable';
+        key.tabIndex = 0;
+        key.textContent = ch;
+        key.addEventListener('click', ()=>{ typeAuthChar(form, ch); refreshAuthForm(prefix, form); });
+        row.appendChild(key);
+      });
+      kb.appendChild(row);
+    });
+
+    const symRow = document.createElement('div');
+    symRow.className = 'kb-row';
+    ['@','.','-','_'].forEach(sym=>{
+      const key = document.createElement('div');
+      key.className = 'key focusable';
+      key.tabIndex = 0;
+      key.textContent = sym;
+      key.addEventListener('click', ()=>{ typeAuthChar(form, sym); refreshAuthForm(prefix, form); });
+      symRow.appendChild(key);
+    });
+    kb.appendChild(symRow);
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'kb-row';
+    const spaceKey = document.createElement('div');
+    spaceKey.className = 'key-action key-wide focusable';
+    spaceKey.tabIndex = 0;
+    spaceKey.textContent = 'Space';
+    spaceKey.addEventListener('click', ()=>{ typeAuthChar(form, ' '); refreshAuthForm(prefix, form); });
+    const delKey = document.createElement('div');
+    delKey.className = 'key-action focusable';
+    delKey.tabIndex = 0;
+    delKey.textContent = '⌫ Delete';
+    delKey.addEventListener('click', ()=>{ deleteAuthChar(form); refreshAuthForm(prefix, form); });
+    actionRow.appendChild(spaceKey);
+    actionRow.appendChild(delKey);
+    kb.appendChild(actionRow);
+  }
+
+  function setupAuthForm(prefix, form){
+    const emailField = document.getElementById(prefix+'EmailField');
+    const passwordField = document.getElementById(prefix+'PasswordField');
+    emailField.addEventListener('click', ()=>{ form.active = 'email'; refreshAuthForm(prefix, form); });
+    passwordField.addEventListener('click', ()=>{ form.active = 'password'; refreshAuthForm(prefix, form); });
+    buildAuthKeyboard(prefix+'Keyboard', form, prefix);
+    refreshAuthForm(prefix, form);
+  }
+
+  function resetAuthForm(form){
+    form.email = ''; form.password = ''; form.active = 'email';
+  }
+
+  document.getElementById('goLoginBtn').addEventListener('click', ()=>{
+    resetAuthForm(loginForm);
+    refreshAuthForm('login', loginForm);
+    showScreen('login');
+  });
+  document.getElementById('goCreateBtn').addEventListener('click', ()=>{
+    resetAuthForm(createForm);
+    refreshAuthForm('create', createForm);
+    showScreen('create');
+  });
+  document.getElementById('loginToCreateBtn').addEventListener('click', ()=>{
+    resetAuthForm(createForm);
+    refreshAuthForm('create', createForm);
+    showScreen('create');
+  });
+  document.getElementById('createToLoginBtn').addEventListener('click', ()=>{
+    resetAuthForm(loginForm);
+    refreshAuthForm('login', loginForm);
+    showScreen('login');
+  });
+
+  function firebaseErrorMessage(err){
+    const map = {
+      'auth/invalid-email': 'Please enter a valid email address.',
+      'auth/user-not-found': 'No account found with that email.',
+      'auth/wrong-password': 'Incorrect password.',
+      'auth/invalid-credential': 'Incorrect email or password.',
+      'auth/email-already-in-use': 'An account already exists with that email.',
+      'auth/weak-password': 'Password should be at least 6 characters.',
+      'auth/missing-password': 'Please enter a password.'
+    };
+    return map[err.code] || 'Something went wrong. Please try again.';
+  }
+
+  function showAuthError(prefix, err){
+    const el = document.getElementById(prefix+'Error');
+    el.textContent = firebaseErrorMessage(err);
+  }
+  function clearAuthError(prefix){
+    document.getElementById(prefix+'Error').textContent = '';
+  }
+
+  document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
+    clearAuthError('login');
+    try{
+      await signInWithEmailAndPassword(auth, loginForm.email.trim(), loginForm.password);
+      // onAuthStateChanged picks this up, loads profiles, and switches screens.
+    }catch(err){
+      console.error(err);
+      showAuthError('login', err);
+    }
+  });
+
+  document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
+    clearAuthError('create');
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, createForm.email.trim(), createForm.password);
+      await setDoc(doc(db, 'users', cred.user.uid), { email: cred.user.email, createdAt: serverTimestamp() });
+      // onAuthStateChanged picks this up, loads profiles, and switches screens.
+    }catch(err){
+      console.error(err);
+      showAuthError('create', err);
+    }
+  });
+
+  document.getElementById('logOutBtn').addEventListener('click', async ()=>{
+    try{ await signOut(auth); }catch(err){ console.error(err); }
+    // onAuthStateChanged resets local state and shows the auth screen.
+  });
+
+  onAuthStateChanged(auth, async (user)=>{
+    if(user){
+      currentUser = user;
+      isAdmin = (user.email || '').trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      await loadProfiles(user.uid);
+      await loadContent();
+      renderProfiles(false);
+    } else {
+      currentUser = null;
+      isAdmin = false;
+      profiles = [];
+      contentList = [];
+      currentProfileIndex = null;
+      editMode = false;
+      editingProfileId = null;
+      document.getElementById('profileGrid').innerHTML = '';
+      showScreen('auth');
+    }
+  });
+
+  // ---------- Home nav wiring ----------
+  document.getElementById('navProfile').addEventListener('click', ()=> renderProfiles(false));
+  document.getElementById('navSearch').addEventListener('click', ()=>{
+    searchQuery = '';
+    refreshSearch();
+    showScreen('search');
+  });
+  document.getElementById('navLiveTv').addEventListener('click', ()=>{
+    document.querySelectorAll('#categoryPills .pill').forEach(x=>x.classList.remove('active-pill'));
+    document.querySelector('#categoryPills .pill[data-cat="channel"]').classList.add('active-pill');
+    activeCategory = 'channel';
+    renderRows();
+    showScreen('home');
+  });
+  document.getElementById('navSettings').addEventListener('click', ()=> openSettings('home'));
+  document.getElementById('navAdmin').addEventListener('click', ()=>{
+    renderAdminList();
+    showScreen('admin');
+  });
+
+  document.querySelectorAll('#categoryPills .pill').forEach(pill=>{
+    pill.addEventListener('click', ()=>{
+      document.querySelectorAll('#categoryPills .pill').forEach(x=>x.classList.remove('active-pill'));
+      pill.classList.add('active-pill');
+      activeCategory = pill.dataset.cat;
+      renderRows();
+    });
+  });
+
+  // ---------- Admin wiring ----------
+  document.getElementById('adminAddBtn').addEventListener('click', ()=> openAdminForm(null));
+  document.getElementById('adminCancelBtn').addEventListener('click', ()=> showScreen('admin'));
+  document.getElementById('admFieldType').addEventListener('change', updateAdminFormType);
+  document.getElementById('addSeasonBtn').addEventListener('click', ()=>{
+    seasonsBuilder.push({ seasonNumber: seasonsBuilder.length + 1, episodes: [] });
+    renderSeasonsBuilder();
+  });
+
+  document.getElementById('adminSaveBtn').addEventListener('click', async ()=>{
+    const type = document.getElementById('admFieldType').value;
+    const title = document.getElementById('admFieldTitle').value.trim();
+    if(!title){
+      document.getElementById('adminFormError').textContent = 'Title is required.';
+      return;
+    }
+    const data = {
+      type,
+      title,
+      description: document.getElementById('admFieldDescription').value.trim(),
+      year: document.getElementById('admFieldYear').value.trim(),
+      rating: document.getElementById('admFieldRating').value.trim(),
+      genres: document.getElementById('admFieldGenres').value.split(',').map(s=>s.trim()).filter(Boolean),
+      posterUrl: document.getElementById('admFieldPoster').value.trim(),
+      backdropUrl: document.getElementById('admFieldBackdrop').value.trim(),
+      featured: document.getElementById('admFieldFeatured').checked
+    };
+    if(type === 'show'){
+      data.seasons = seasonsBuilder.map(s=>({
+        seasonNumber: s.seasonNumber,
+        episodes: (s.episodes||[]).filter(e=> e.title || e.videoUrl)
+      }));
+    } else {
+      data.videoUrl = document.getElementById('admFieldVideoUrl').value.trim();
+    }
+    try{
+      if(editingContentId){
+        await updateDoc(doc(db, 'content', editingContentId), data);
+        const idx = contentList.findIndex(c=>c.id===editingContentId);
+        if(idx > -1) contentList[idx] = { id: editingContentId, ...data };
+      } else {
+        data.createdAt = serverTimestamp();
+        const ref = await addDoc(collection(db, 'content'), data);
+        contentList.push({ id: ref.id, ...data });
+      }
+      showScreen('admin');
+      renderAdminList();
+    }catch(err){
+      console.error(err);
+      document.getElementById('adminFormError').textContent = firestoreErrorMessage(err);
+    }
+  });
+
+  // ---------- Spatial navigation (D-pad) ----------
+  function getFocusables(){
+    const activeScreen = document.querySelector('.screen.active');
+    return Array.from(activeScreen.querySelectorAll('.focusable'))
+      .filter(el => el.offsetParent !== null);
+  }
+
+  function moveFocus(dir){
+    const focusables = getFocusables();
+    const current = document.activeElement;
+    if(!focusables.includes(current)){
+      if(focusables[0]) focusables[0].focus();
+      return;
+    }
+    const curRect = current.getBoundingClientRect();
+    const curCenter = { x: curRect.left + curRect.width/2, y: curRect.top + curRect.height/2 };
+
+    let best = null, bestScore = Infinity;
+    focusables.forEach(el=>{
+      if(el === current) return;
+      const r = el.getBoundingClientRect();
+      const c = { x: r.left + r.width/2, y: r.top + r.height/2 };
+      const dx = c.x - curCenter.x, dy = c.y - curCenter.y;
+      let primary, secondary, valid = false;
+      if(dir === 'left'){  valid = dx < -1; primary = -dx; secondary = Math.abs(dy); }
+      if(dir === 'right'){ valid = dx > 1;  primary = dx;  secondary = Math.abs(dy); }
+      if(dir === 'up'){    valid = dy < -1; primary = -dy; secondary = Math.abs(dx); }
+      if(dir === 'down'){  valid = dy > 1;  primary = dy;  secondary = Math.abs(dx); }
+      if(!valid) return;
+      const score = primary + secondary * 2;
+      if(score < bestScore){ bestScore = score; best = el; }
+    });
+
+    if(best){
+      best.focus();
+      best.scrollIntoView({ block:'nearest', inline:'nearest', behavior:'smooth' });
+    }
+  }
+
+  document.addEventListener('keydown', (e)=>{
+    const tag = document.activeElement.tagName;
+    const isFormField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    const activeScreen = document.querySelector('.screen.active').dataset.screen;
+
+    if(isFormField){
+      // Let native browser behavior handle typing/cursor movement inside admin form fields.
+      if(e.key === 'Escape'){ e.preventDefault(); goBack(); }
+      return;
+    }
+
+    if(activeScreen === 'player' && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter'].includes(e.key)){
+      showOverlay();
+    }
+
+    switch(e.key){
+      case 'ArrowUp':    e.preventDefault(); moveFocus('up'); break;
+      case 'ArrowDown':  e.preventDefault(); moveFocus('down'); break;
+      case 'ArrowLeft':  e.preventDefault(); moveFocus('left'); break;
+      case 'ArrowRight': e.preventDefault(); moveFocus('right'); break;
+      case 'Enter':
+        e.preventDefault();
+        if(activeScreen === 'player'){ togglePlayPause(); }
+        else{ document.activeElement.click(); }
+        break;
+      case 'Escape':     e.preventDefault(); goBack(); break;
+      case 'MediaPlayPause': case 'MediaPlay': case 'MediaPause':
+        if(activeScreen === 'player'){ e.preventDefault(); togglePlayPause(); }
+        break;
+      case 'Backspace':
+        e.preventDefault();
+        if(activeScreen === 'name'){ deleteChar(); }
+        else if(activeScreen === 'login'){ deleteAuthChar(loginForm); refreshAuthForm('login', loginForm); }
+        else if(activeScreen === 'create'){ deleteAuthChar(createForm); refreshAuthForm('create', createForm); }
+        else if(activeScreen === 'search'){ searchQuery = searchQuery.slice(0, -1); refreshSearch(); }
+        else{ goBack(); }
+        break;
+      default:
+        // Convenience: allow direct typing on the name screen from a real keyboard.
+        if(activeScreen === 'name' && e.key.length === 1 && /[a-zA-Z0-9 ]/.test(e.key)){
+          typeChar(e.key.toUpperCase());
+        }
+        if(activeScreen === 'login' && e.key.length === 1 && /[a-zA-Z0-9@._\- ]/.test(e.key)){
+          typeAuthChar(loginForm, e.key);
+          refreshAuthForm('login', loginForm);
+        }
+        if(activeScreen === 'create' && e.key.length === 1 && /[a-zA-Z0-9@._\- ]/.test(e.key)){
+          typeAuthChar(createForm, e.key);
+          refreshAuthForm('create', createForm);
+        }
+        if(activeScreen === 'search' && e.key.length === 1 && /[a-zA-Z0-9 ]/.test(e.key)){
+          searchQuery += e.key;
+          refreshSearch();
+        }
+    }
+  });
+
+  // ---------- Init ----------
+  setupAuthForm('login', loginForm);
+  setupAuthForm('create', createForm);
+  buildKeyboard();
+  buildSettings();
+  buildSearchKeyboard();
+  applyLanguage();
 </script>
+
 </body>
 </html>
